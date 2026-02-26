@@ -1,0 +1,125 @@
+[project]
+name = "brainglobe-data-api-volume"
+authors = [{name = "Harry Carey", email= "harry.carey95@gmail.com"}]
+description = "An API for accessing atlas registered 3D volumetric data."
+readme = "README.md"
+requires-python = ">=3.11.0"
+dynamic = ["version"]
+
+dependencies = []
+
+license = "BSD-3-Clause"
+
+license-files = ["LICENSE"]
+
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/polarbean/brainglobe-data-api-volume"
+"Bug Tracker" = "https://github.com/polarbean/brainglobe-data-api-volume/issues"
+"Documentation" = "https://polarbean.github.io/brainglobe-data-api-volume"
+
+"Source Code" = "https://github.com/polarbean/brainglobe-data-api-volume"
+"User Support" = "https://github.com/polarbean/brainglobe-data-api-volume/issues"
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-cov",
+  "coverage",
+  "tox",
+  "mypy",
+  "pre-commit",
+  "ruff",
+  "setuptools-scm",
+]
+
+[build-system]
+requires = [
+    "setuptools>=77",
+    "wheel",
+    "setuptools-scm[toml]>=8",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["brainglobe_data_api_volume*"]
+exclude = ["tests", "docs*"]
+
+
+[tool.pytest.ini_options]
+addopts = "--cov=brainglobe_data_api_volume"
+filterwarnings = [
+    "error",
+]
+
+[tool.setuptools_scm]
+
+[tool.check-manifest]
+ignore = [
+  ".yaml",
+  "tox.ini",
+  "tests/",
+  "tests/test_unit/",
+  "tests/test_integration/",
+  "docs/",
+  "docs/source/",
+]
+
+
+[tool.ruff]
+line-length = 79
+exclude = ["__init__.py", "build", ".eggs"]
+lint.select = [
+  "E",   # pycodestyle errors
+  "F",   # Pyflakes
+  "I",   # isort
+  # You can see what all the rules do here: https://docs.astral.sh/ruff/rules/
+  # Some additional ruff rules that might be useful (uncomment to enable)
+  #"UP",  # pyupgrade
+  #"B",   # flake8 bugbear
+  #"SIM", # flake8 simplify
+  #"C90", # McCabe complexity
+]
+fix = true
+
+[tool.ruff.format]
+docstring-code-format = true # Also format code in docstrings (e.g. examples)
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py{311,312,313}
+isolated_build = True
+
+[gh-actions]
+python =
+    3.11: py311
+    3.12: py312
+    3.13: py313
+
+[testenv]
+passenv =
+    CI
+    GITHUB_ACTIONS
+extras =
+    dev
+commands =
+    pytest -v --color=yes --cov=brainglobe_data_api_volume --cov-report=xml
+"""
+
+
+[tool.codespell]
+skip = '.git'
+check-hidden = true
