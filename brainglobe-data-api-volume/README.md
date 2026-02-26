@@ -1,1 +1,0 @@
-# brainglobe-data-api-volume
