@@ -18,7 +18,10 @@ target_dataset_name = results.iloc[0]["unique_name"]
 # 2. Load the dataset (downloads manifest, prepares Zarr connection)
 dataset = BrainGlobeDataset(target_dataset_name)
 
-# 3. Retrieve the associated BrainGlobeAtlas
+# 3. Load the array values
+intensity_map = dataset.values
+
+# optional. Retrieve the associated BrainGlobeAtlas
 atlas_name = dataset.atlas_space # -> allen_mouse
 dataset_resolution = dataset.volume_resolution_um
 atlas = BrainGlobeAtlas(f"{atlas_name}_{dataset_resolution}_um")

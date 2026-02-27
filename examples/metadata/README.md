@@ -7,9 +7,7 @@ They are:
 * anatomical_target - Specific brain regions tied to the experiment (e.g., a viral injection site, a tumor location, or an ROI).
 * experimental_approach - The overarching scientific domain or methodological approach of the dataset.
 * technique - Method of accomplishing a desired aim.
-* atlas_space - The reference coordinate space the volume is registered to.
+* common_coordinate_space - The brainglobe atlas that the data is registered to
 * species - Category of biological classification comprising related organisms or populations potentially capable of interbreeding, and being designated by a binomial that consists of the name of a genus followed by a Latin or latinized uncapitalized noun or adjective.
 
 
-
-The main changes we will make I can think of so far are that for atlas_space we will use the relevant brainglobe atlas name. 
