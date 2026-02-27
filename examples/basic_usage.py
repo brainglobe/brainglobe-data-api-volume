@@ -2,15 +2,15 @@ import numpy as np
 from brainglobe_data_api import query_datasets, BrainGlobeDataset
 from brainglobe_atlasapi import BrainGlobeAtlas
 # 1. Discover the dataset using openMINDS metadata
-)
+
 """
 we can query using openminds metadata. Relevant fields we might start with are
-mentioned in our supported-metadata.md file. 
+mentioned in our supported-metadata.md file.
 
 """
 results = query_datasets(
-    technique="viral tracing", 
-    anatomical_target="MOp"
+    technique="viral tracing",
+    anatomical_target="MOp")
 
 #returns a dataframe with matching datasets and the associated metadata
 target_dataset_name = results.iloc[0]["unique_name"]
