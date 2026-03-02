@@ -46,7 +46,7 @@ These are not from openMINDS:
 * `orientation` - BrainGlobe orientation code (e.g. `"asr"`).
 * `shape` - Volume dimensions in voxels.
 * `voxel_size_um` - Voxel size in micrometers.
-* `coordinate_space` - The BrainGlobe atlas the data is registered to, as `{name, version}`.
+* `coordinate_space` - The BrainGlobe coordinate space the data is registered to, as `{name, version}`.
 
 ## Volume Fields
 
