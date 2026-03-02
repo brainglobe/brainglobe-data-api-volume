@@ -17,7 +17,7 @@ proposal/example_dataset/
 
 - each dataset is given a UUID
 - volume data stored as zarr
-- We use fields from openminds, modify them where we need and store them in a json for simplicity.
+- We use fields from openminds, stored in a json
 - Metadata will be stored as a postgres database so we can query quickly. We will build the database from the jsons.
 
 
@@ -25,7 +25,7 @@ proposal/example_dataset/
 
 These are not from openMINDS:
 
-* `name` - Human-readable dataset name.
+* `name` -  dataset name.
 * `description` - What the dataset contains.
 * `id` - UUID, unique dataset identifier.
 * `version` - Semantic version (e.g. `"1.0"`).
