@@ -46,6 +46,16 @@ These are not from openMINDS (or I couldnt find them):
 * `coordinate_space` - The BrainGlobe coordinate space the data is registered to, as `{name, version}`.
 * `shape` - Volume dimensions in voxels.
 
+## my fields for handling population average datasets
+* `sample_number` -  number of animals used to create this average.
+* `number_of_female` -  the number of female animals used to create this average.
+* `number_of_male` -  the number of male animals used to create this average.
+* `number_of_hemaphrodite` -  the number of hemaprodite animals used to create this average.
+* `age` -  The average age of animals used in this dataset
+* `age_units` -  the units for interpreting the age variable
+
+
+
 ## Volume Fields
 
 * `volume.format` - Data format (e.g. `"ome-zarr"`).
