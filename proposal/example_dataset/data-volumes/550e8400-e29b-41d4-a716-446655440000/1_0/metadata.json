@@ -1,7 +1,6 @@
 {
   "citation": "Example et al 2026, https://doi.org/10.0000/example",
   "species": "Mus musculus",
-  "modality": "lightsheet fluorescence",
   "orientation": "asr",
   "shape": [132, 80, 114],
   "voxel_size_um": [100.0, 100.0, 100.0],
@@ -9,8 +8,7 @@
   "biological_sex": "female",
   "developmental_stage": "adult",
   "anatomical_target": ["MOp"],
-  "experimental_approach": "systems neuroscience",
-  "technique": ["viral tracing"],
+  "technique": ["viral tracing", "lightsheet fluorescence microscopy"],
   "coordinate_space": {
     "name": "allen-adult-mouse-ccf-space",
     "version": "2015",
