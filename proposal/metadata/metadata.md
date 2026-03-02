@@ -10,15 +10,16 @@ openMINDS type: [https://openminds.om-i.org/types/Species](https://openminds.om-
 
 ---
 
-## `atlas_space`
+## `coordinate_space`
 
-The reference coordinate space the volume is registered to.
+The BrainGlobe atlas coordinate space the volume is registered to. Stored as `{name, version}`.
 
 openMINDS type: [https://openminds.om-i.org/types/CommonCoordinateSpace](https://openminds.om-i.org/types/CommonCoordinateSpace)
 
-**Valid values (12):** Allen Mouse Brain Common Coordinate Framework, BigBrain Whole-Brain Model, FsAverage Surface Space, MEBRAINS population-based monkey brain template, MNI Colin27 Average Brain Stereotaxic Registration Model, MNI ICBM152 Average Brain Stereotaxic Registration Model, Paxinos and Watson's Coronal Template of the Rat Brain in Stereotaxic Coordinates, Paxinos et al. Coronal Template of the Marmoset Brain in Stereotaxic Coordinates, Swanson's Stereotactic Brain of the Sprague Dawley Rat, The Marmoset Nencki-Monash Template in Stereotaxic Coordinates, Unbiased FsAverage Left–Right Hybrid Surface Space, Waxholm Space of the Sprague Dawley Rat Brain (coordinate space)
+**Valid values:** Must match a BrainGlobe atlas coordinate space name and version (e.g. `{"name": "allen-adult-mouse-ccf-space", "version": "2015"}`).
 
 ---
+
 
 ## `technique`
 
@@ -35,23 +36,31 @@ openMINDS type: [https://openminds.om-i.org/types/Technique](https://openminds.o
 
 ---
 
-## `experimental_approach`
+## `injection_target`
 
-The overarching scientific domain or methodological approach of the dataset.
-
-openMINDS type: [https://openminds.om-i.org/types/ExperimentalApproach](https://openminds.om-i.org/types/ExperimentalApproach)
-
-**Valid values (40):** anatomy, behavior, biophysics, cell biology, cell morphology, cell population characterization, cell population imaging, cell population manipulation, chemogenetics, clinical research, computational modeling, developmental biology, ecology, electrophysiology, epidemiology, epigenomics, ethology, evolutionary biology, expression, expression characterization, genetics, genomics, histology, informatics, metabolomics, microscopy, morphology, multimodal research, multiomics, neural connectivity, neuroimaging, omics, optogenetics, pathology, pharmacology, physiology, proteomics, radiology, spatial transcriptomics, transcriptomics
-
----
-
-## `anatomical_target`
-
-Specific brain regions tied to the experiment (e.g., a viral injection site, a tumor location, or an ROI).
+Specific brain regions which were injection targets. Nested with the annotation set that defines the region acronyms.
 
 openMINDS type: [https://openminds.om-i.org/props/anatomicalLocation](https://openminds.om-i.org/props/anatomicalLocation)
 
-**Valid values:** Free text (atlas-specific region acronyms, e.g. "MOp", "VISp", "amygdala")
+**Structure:**
+```json
+{
+  "regions": ["MOp"],
+  "annotation_set": {
+    "name": "allen-adult-mouse-annotation",
+    "version": "2017"
+  }
+}
+```
+
+**Valid values for `regions`:** Constrained to terminology acronyms defined by the specified `annotation_set` (e.g. "MOp", "VISp", "AMY" for `allen-adult-mouse-annotation`).
+
+---
+
+## `injection_coordinate`
+
+Specific coordinate in CCF coordinates in the related coordinate space
+
 
 ---
 
@@ -79,6 +88,6 @@ openMINDS type: [https://openminds.om-i.org/types/BiologicalSex](https://openmin
 
 What the voxel values in a 3D volume actually represent.
 
-openMINDS type: [https://openminds.om-i.org/types/MeasuredQuantity](https://openminds.om-i.org/types/MeasuredQuantity)
+Inspired by openMINDS [MeasuredQuantity](https://openminds.om-i.org/types/MeasuredQuantity), but using a custom controlled vocabulary relevant to volumetric imaging data.
 
-**Valid values (8):** chloride reversal potential, compensation current, holding potential, input resistance, liquid junction potential, membrane potential, seal resistance, series resistance
+**Valid values:** fluorescence intensity, cell density, gene expression level, optical density, T1 relaxation time, T2 relaxation time, fractional anisotropy, mean diffusivity, cerebral blood flow, probability map, binary mask

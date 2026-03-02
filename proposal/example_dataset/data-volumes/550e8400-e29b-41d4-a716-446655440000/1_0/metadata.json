@@ -1,18 +1,38 @@
 {
+  "name": "MOp viral tracing - Mouse 42",
+  "description": "AAV-GFP anterograde tracing from primary motor cortex",
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "version": "1.0",
+  "license": "CC-BY-4.0",
   "citation": "Example et al 2026, https://doi.org/10.0000/example",
+  "contributors": ["Example Lab, UCL"],
+
   "species": "Mus musculus",
+  "biological_sex": "female",
+  "developmental_stage": "adult",
+  "injection_target": {
+    "regions": ["MOp"],
+    "annotation_set": {
+      "name": "allen-adult-mouse-annotation",
+      "version": "2017"
+    }
+  },
+  "injection_coordinate": [6600, 4000, 5400],
+  "technique": ["viral tracing", "lightsheet fluorescence microscopy"],
+  "measured_quantity": "fluorescence intensity",
+
   "orientation": "asr",
   "shape": [132, 80, 114],
   "voxel_size_um": [100.0, 100.0, 100.0],
-  "measured_quantity": "fluorescence intensity",
-  "biological_sex": "female",
-  "developmental_stage": "adult",
-  "anatomical_target": ["MOp"],
-  "technique": ["viral tracing", "lightsheet fluorescence microscopy"],
+
   "coordinate_space": {
     "name": "allen-adult-mouse-ccf-space",
-    "version": "2015",
-    "atlas": "allen_mouse",
-    "location": "/atlas/coordinate-spaces/allen-adult-mouse-ccf-space/2015"
+    "version": "2015"
+  },
+
+  "volume": {
+    "format": "ome-zarr",
+    "multiscale": true,
+    "path": "volume.ome.zarr"
   }
 }
