@@ -18,7 +18,7 @@ proposal/example_dataset/
 - each dataset is given a UUID
 - volume data stored as zarr
 - We use fields from openminds, stored in a json
-- Metadata will be stored as a postgres database so we can query quickly. We will build the database from the jsons.
+- Metadata will be stored as a sqlite database so we can query quickly. We will build the database from the jsons.
 
 
 ## Metadata fields
