@@ -35,7 +35,7 @@ These are not from openMINDS:
 
 ## Scientific Fields (openMINDS-derived)
 
-* `species` -  species name (e.g. "Mus musculus") - I guess this should follow the brainglobe atlas
+* `species` -  species name (e.g. "Mus musculus") - I guess this should follow the brainglobe atlas api since each dataset should have a corresponding CCF in the atlas api
 * `biological_sex` - Female, male, hermaphrodite, not detectable.
 * `developmental_stage` - Life cycle class: adolescent, adult, embryo, infant, juvenile, etc.
 * `injection_target` - Injection target regions, nested with the annotation set they belong to: `{regions, annotation_set: {name, version}}`.
