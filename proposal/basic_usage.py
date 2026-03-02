@@ -1,4 +1,3 @@
-import numpy as np
 from brainglobe_data_api import query_datasets, BrainGlobeDataset
 from brainglobe_atlasapi import BrainGlobeAtlas
 # 1. Discover the dataset using openMINDS metadata
@@ -22,7 +21,9 @@ dataset = BrainGlobeDataset(target_dataset_name)
 intensity_map = dataset.values
 
 # optional. Retrieve the associated BrainGlobeAtlas
-atlas_name = dataset.atlas_space # -> allen_mouse
+# not clear how we will be able to access atlases via
+# common_coordinate_spaces yet in bg-atlasv2
+atlas_name = dataset.common_coordinate_space # -> allen_mouse
 dataset_resolution = dataset.volume_resolution_um
 atlas = BrainGlobeAtlas(f"{atlas_name}_{dataset_resolution}_um")
 
