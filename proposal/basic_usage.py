@@ -23,6 +23,4 @@ intensity_map = dataset.values  # shape: (132, 80, 114)
 # 4. Access metadata
 print(dataset.metadata.species)  # "Mus musculus"
 print(dataset.metadata.voxel_size_um)  # [100.0, 100.0, 100.0]
-
-# 5. Get the matching atlas (if brainglobe-atlasapi is installed)
-atlas = dataset.get_atlas()  # returns BrainGlobeAtlas for the coordinate space
+print(dataset.metadata.coordinate_space # The coordinate space the dataset is registered to
