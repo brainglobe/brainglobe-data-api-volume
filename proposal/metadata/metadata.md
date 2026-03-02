@@ -84,9 +84,21 @@ openMINDS type: [https://openminds.om-i.org/types/BiologicalSex](https://openmin
 
 ---
 
-## `measured_quantity`
+## `volume.channels`
 
-What the voxel values in a 3D volume actually represent.
+Per-channel metadata for multi-channel volumes. Each entry describes one channel in the OME-Zarr store.
+
+**Structure:**
+```json
+"channels": [
+  {"index": 0, "name": "GFP", "measured_quantity": "fluorescence intensity"},
+  {"index": 1, "name": "autofluorescence", "measured_quantity": "fluorescence intensity"}
+]
+```
+
+### `measured_quantity`
+
+What the voxel values in a channel actually represent. Specified per channel.
 
 Inspired by openMINDS [MeasuredQuantity](https://openminds.om-i.org/types/MeasuredQuantity), but using a custom controlled vocabulary relevant to volumetric imaging data.
 

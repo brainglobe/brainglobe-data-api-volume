@@ -19,8 +19,6 @@
   },
   "injection_coordinate": [6600, 4000, 5400],
   "technique": ["viral tracing", "lightsheet fluorescence microscopy"],
-  "measured_quantity": "fluorescence intensity",
-
   "orientation": "asr",
   "shape": [132, 80, 114],
   "voxel_size_um": [100.0, 100.0, 100.0],
@@ -33,6 +31,10 @@
   "volume": {
     "format": "ome-zarr",
     "multiscale": true,
-    "path": "volume.ome.zarr"
+    "path": "volume.ome.zarr",
+    "channels": [
+      {"index": 0, "name": "GFP", "measured_quantity": "fluorescence intensity"},
+      {"index": 1, "name": "autofluorescence", "measured_quantity": "fluorescence intensity"}
+    ]
   }
 }
