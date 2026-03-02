@@ -26,6 +26,7 @@ proposal/example_dataset/
 These are not from openMINDS (or I couldnt find them):
 
 * `id` - UUID, unique dataset identifier.
+* `injection_coordinate` - Specific coordinate in the related coordinate space (e.g. `[6600, 4000, 5400]`).
 
 ## openMINDS-derived fields
 * `name` -  dataset name.
@@ -37,7 +38,6 @@ These are not from openMINDS (or I couldnt find them):
 * `biological_sex` - Female, male, hermaphrodite, not detectable.
 * `developmental_stage` - Life cycle class: adolescent, adult, embryo, infant, juvenile, etc.
 * `injection_target` - Injection target regions, nested with the annotation set they belong to: `{regions, annotation_set: {name, version}}`.
-* `injection_coordinate` - Specific coordinate in the related coordinate space (e.g. `[6600, 4000, 5400]`).
 * `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
 * `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density).
 * `digital_identifier` - Publication reference and DOI.
