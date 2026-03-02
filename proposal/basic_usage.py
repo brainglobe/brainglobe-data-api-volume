@@ -12,10 +12,10 @@ results = query_datasets(
     anatomical_target="MOp")
 
 #returns a dataframe with matching datasets and the associated metadata
-target_dataset_name = results.iloc[0]["id"]
+target_dataset_id = results.iloc[0]["id"]
 
 # 2. Load the dataset (downloads manifest, prepares Zarr connection)
-dataset = BrainGlobeDataset(target_dataset_name)
+dataset = BrainGlobeDataset(target_dataset_id)
 
 # 3. Load the array values
 intensity_map = dataset.values
