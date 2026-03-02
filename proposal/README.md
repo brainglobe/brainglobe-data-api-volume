@@ -23,18 +23,16 @@ proposal/example_dataset/
 
 ## Metadata fields
 
-These are not from openMINDS:
+These are not from openMINDS (or I couldnt find them):
 
-* `name` -  dataset name.
-* `description` - What the dataset contains.
 * `id` - UUID, unique dataset identifier.
-* `version` - Semantic version (e.g. `"1.0"`).
-* `license` - Usage terms (e.g. `"CC-BY-4.0"`).
-* `citation` - Publication reference and DOI.
+
+## openMINDS-derived fields
+* `name` -  dataset name.
 * `contributors` - Labs or authors who produced the data.
-
-## Scientific Fields (openMINDS-derived)
-
+* `description` - What the dataset contains.
+* `dataset_version` - Semantic version (e.g. `"1.0"`).
+* `license` - Usage terms (e.g. `"CC-BY-4.0"`).
 * `species` -  species name (e.g. "Mus musculus") - I guess this should follow the brainglobe atlas api since each dataset should have a corresponding CCF in the atlas api
 * `biological_sex` - Female, male, hermaphrodite, not detectable.
 * `developmental_stage` - Life cycle class: adolescent, adult, embryo, infant, juvenile, etc.
@@ -42,17 +40,15 @@ These are not from openMINDS:
 * `injection_coordinate` - Specific coordinate in the related coordinate space (e.g. `[6600, 4000, 5400]`).
 * `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
 * `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density).
-
-## Spatial Fields
-
-* `orientation` - BrainGlobe orientation code (e.g. `"asr"`).
-* `shape` - Volume dimensions in voxels.
+* `digital_identifier` - Publication reference and DOI.
+* `anatomical_axes_orientation` - BrainGlobe orientation code (e.g. `"asr"`).
 * `voxel_size_um` - Voxel size in micrometers.
 * `coordinate_space` - The BrainGlobe coordinate space the data is registered to, as `{name, version}`.
+* `shape` - Volume dimensions in voxels.
 
 ## Volume Fields
 
 * `volume.format` - Data format (e.g. `"ome-zarr"`).
 * `volume.multiscale` - Whether the volume has multiple resolution levels.
 * `volume.path` - Relative path to the volume file within the dataset directory.
-* `volume.channels` - Per-channel metadata: `[{index, name, measured_quantity}, ...]`. Multi-channel data uses OME-Zarr's built-in channel support; this array describes what each channel represents.
+* `volume.channels` - Per-channel metadata: `[{index, name, ...]`. Multi-channel data uses OME-Zarr's built-in channel support; this array describes what each channel represents. - maybe we should split these itno seperate datasets
