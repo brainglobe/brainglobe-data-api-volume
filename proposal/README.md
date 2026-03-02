@@ -41,7 +41,7 @@ These are not from openMINDS:
 * `injection_target` - Injection target regions, nested with the annotation set they belong to: `{regions, annotation_set: {name, version}}`.
 * `injection_coordinate` - Specific coordinate in the related coordinate space (e.g. `[6600, 4000, 5400]`).
 * `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
-* `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density). Custom controlled vocabulary for volumetric data.
+* `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density). 
 
 ## Spatial Fields
 
