@@ -59,7 +59,7 @@ openMINDS type: [https://openminds.om-i.org/props/anatomicalLocation](https://op
 
 ## `injection_coordinate`
 
-Specific coordinate in CCF coordinates in the related coordinate space
+Specific coordinate in CCF space of an injection
 
 
 ---
@@ -76,7 +76,7 @@ openMINDS type: [https://openminds.om-i.org/types/AgeCategory](https://openminds
 
 ## `biological_sex`
 
-Differentiation of individuals of most species (animals and plants) based on the type of gametes they produce.
+Structured information on the biological sex of a subject
 
 openMINDS type: [https://openminds.om-i.org/types/BiologicalSex](https://openminds.om-i.org/types/BiologicalSex)
 
