@@ -1,6 +1,10 @@
 # Implementation of data api proposal
 
-Based on the atlas API v2.
+Based on the atlas API v2. This document provides a broad overview of the data API. 
+
+* basic_usage.py shows what it will look like to actually use the API.
+* dataset_scripts shows a mock ingestion.
+* dataset_directory shows how the volumes will be stored
 
 ## Dataset Structure
 
