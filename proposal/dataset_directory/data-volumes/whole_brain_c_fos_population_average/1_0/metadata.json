@@ -29,11 +29,6 @@
     25.0
   ],
   "coordinate_space": "allen_mouse",
-  "volume": {
-    "format": "ome-zarr",
-    "multiscale": true,
-    "path": "volume.ome.zarr"
-  },
   "sample_number": 12,
   "number_of_female": 6,
   "number_of_male": 6,

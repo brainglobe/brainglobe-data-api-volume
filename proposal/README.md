@@ -77,8 +77,3 @@ This keeps each dataset simple (one volume = one measured quantity) and avoids t
 * `project_id` - UUID identifying the project this dataset belongs to. Datasets produced as part of the same set (e.g. a study or publication) share this ID.
 * `channel_name` - Human-readable name for this channel (e.g. `"GFP"`, `"tdTomato"`, `"autofluorescence"`).
 
-## Volume Fields
-
-* `volume.format` - Data format (e.g. `"ome-zarr"`).
-* `volume.multiscale` - Whether the volume has multiple resolution levels.
-* `volume.path` - Relative path to the volume file within the dataset directory.

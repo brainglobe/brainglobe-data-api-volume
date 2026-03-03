@@ -83,11 +83,6 @@ def create_dataset(
         "shape": shape,
         "voxel_size_um": voxel_size_um,
         "coordinate_space": coordinate_space,
-        "volume": {
-            "format": "ome-zarr",
-            "multiscale": True,
-            "path": "volume.ome.zarr",
-        },
     }
     if subject_id is not None:
         metadata["subject_id"] = subject_id

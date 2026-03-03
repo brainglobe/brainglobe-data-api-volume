@@ -29,10 +29,5 @@
     25.0
   ],
   "coordinate_space": "allen_mouse",
-  "volume": {
-    "format": "ome-zarr",
-    "multiscale": true,
-    "path": "volume.ome.zarr"
-  },
   "subject_id": "e8d79f49-af6d-414c-8a6f-188a424e617b"
 }
