@@ -11,7 +11,7 @@ cfos = create_dataset(
     name="Whole-brain c-Fos population average",
     description="Average c-Fos expression map from 12 adult mice "
     "after novel environment exposure",
-    citation="Lee et al 2026, https://doi.org/10.9999/cfos-avg",
+    digital_identifier="https://doi.org/10.9999/cfos-avg",
     contributors=["Lee Lab, Francis Crick Institute"],
     project_id=str(uuid.UUID(int=rng.getrandbits(128), version=4)),
     channel_name="c-Fos",

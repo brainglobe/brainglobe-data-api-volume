@@ -12,7 +12,7 @@ PROJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
 COMMON = dict(
     version="1.0",
     license="CC-BY-4.0",
-    citation="Smith et al 2025, https://doi.org/10.1234/visp-tracing",
+    digital_identifier="https://doi.org/10.1234/visp-tracing",
     contributors=["Smith Lab, Sainsbury Wellcome Centre"],
     subject_id=SUBJECT_ID,
     project_id=PROJECT_ID,

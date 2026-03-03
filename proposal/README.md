@@ -45,7 +45,7 @@ These are not from openMINDS (or I couldnt find them):
 * `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
 * `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density). Since each channel is its own dataset, this is always a single quantity.
 * `studied_target` - What were we trying to measure (e.g. DRD1, C-Fos, Nissl )
-* `digital_identifier` - Publication reference and DOI.
+* `digital_identifier` - DOI for the associated publication (e.g. `"10.1234/example"`).
 * `anatomical_axes_orientation` - BrainGlobe orientation code (e.g. `"asr"`).
 * `voxel_size_um` - Voxel size in micrometers.
 * `coordinate_space` - The BrainGlobe atlas name the data is registered to (e.g. `"allen_mouse"`). Must be a valid atlas in `brainglobe_atlasapi`. Resolution is not included here — it is captured by `voxel_size_um`.
