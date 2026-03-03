@@ -23,4 +23,7 @@ intensity_map = dataset.values  # shape: (132, 80, 114)
 # 4. Access metadata
 print(dataset.metadata.species)  # "Mus musculus"
 print(dataset.metadata.voxel_size_um)  # [100.0, 100.0, 100.0]
-print(dataset.metadata.coordinate_space # The coordinate space the dataset is registered to
+print(dataset.metadata.coordinate_space) # The coordinate space the dataset is registered to
+project_id = dataset.metadata.project_id
+datasets_from_project = query_datasets(project = project_id)
+print(datasets_from_project)

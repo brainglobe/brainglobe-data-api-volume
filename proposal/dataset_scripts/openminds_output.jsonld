@@ -1,0 +1,126 @@
+{
+  "@context": {
+    "@vocab": "https://openminds.ebrains.eu/vocab/"
+  },
+  "@graph": [
+    {
+      "@id": "_:000000",
+      "@type": "https://openminds.ebrains.eu/core/SubjectState",
+      "ageCategory": {
+        "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult"
+      },
+      "internalIdentifier": "sub-11111111-2222-3333-4444-555555555555"
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/AgeCategory",
+      "definition": "'Adult' categorizes the life cycle stage of an animal or human that reached sexual maturity.",
+      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0729043",
+      "name": "adult",
+      "preferredOntologyIdentifier": "http://purl.obolibrary.org/obo/UBERON_0000113",
+      "synonym": [
+        "adult stage",
+        "post-juvenile adult",
+        "post-juvenile adult stage"
+      ]
+    },
+    {
+      "@id": "_:000002",
+      "@type": "https://openminds.ebrains.eu/core/Subject",
+      "internalIdentifier": "sub-11111111-2222-3333-4444-555555555555",
+      "species": {
+        "@id": "https://openminds.ebrains.eu/instances/species/musMusculus"
+      },
+      "studiedState": [
+        {
+          "@id": "_:000000"
+        }
+      ]
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/species/musMusculus",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/Species",
+      "definition": "The species *Mus musculus* (house mouse) belongs to the family of *muridae* (murids).",
+      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0107134",
+      "knowledgeSpaceLink": "https://knowledge-space.org/wiki/NCBITaxon:10090#mouse",
+      "name": "Mus musculus",
+      "preferredOntologyIdentifier": "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+      "synonym": [
+        "house mouse",
+        "mouse"
+      ]
+    },
+    {
+      "@id": "_:000004",
+      "@type": "https://openminds.ebrains.eu/sands/CustomCoordinateSpace",
+      "anatomicalAxesOrientation": {
+        "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR"
+      },
+      "name": "allen-adult-mouse-ccf-space-v2015",
+      "nativeUnit": {
+        "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/micrometer"
+      }
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/AnatomicalAxesOrientation",
+      "definition": "X, Y, Z axes are oriented towards anterior, superior and right, respectively.",
+      "name": "ASR"
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/micrometer",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/UnitOfMeasurement",
+      "name": "micrometer"
+    },
+    {
+      "@id": "_:000007",
+      "@type": "https://openminds.ebrains.eu/core/FileRepository",
+      "IRI": "file://data-volumes/whole_brain_drd1_expression_mouse_13/1_0/volume.ome.zarr",
+      "name": "DRD1 volume"
+    },
+    {
+      "@id": "_:000008",
+      "@type": "https://openminds.ebrains.eu/core/DatasetVersion",
+      "description": "Light sheet fluorescence microscopy of DRD1 immunostaining across the whole brain",
+      "fullName": "Whole-brain DRD1 expression - Mouse 13",
+      "repository": {
+        "@id": "_:000007"
+      },
+      "shortName": "DRD1",
+      "studiedSpecimen": [
+        {
+          "@id": "_:000002"
+        }
+      ],
+      "technique": [
+        {
+          "@id": "_:000009"
+        },
+        {
+          "@id": "https://openminds.ebrains.eu/instances/technique/lightSheetFluorescenceMicroscopy"
+        }
+      ],
+      "versionIdentifier": "1.0",
+      "versionInnovation": "DRD1: fluorescence intensity"
+    },
+    {
+      "@id": "_:000009",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/Technique",
+      "name": "immunostaining"
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/technique/lightSheetFluorescenceMicroscopy",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/Technique",
+      "definition": "Lightsheet fluorescence microscopy is a fluorescence microscopy technique that uses a thin sheet of light to excite only fluorophores within the plane of illumination.",
+      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0739693",
+      "name": "light sheet fluorescence microscopy",
+      "preferredOntologyIdentifier": "http://uri.interlex.org/tgbugs/uris/readable/technique/lightSheetMicroscopyFluorescent",
+      "synonym": [
+        "light sheet microscopy",
+        "LSFM",
+        "selective plane illumination microscopy",
+        "SPIM"
+      ]
+    }
+  ]
+}

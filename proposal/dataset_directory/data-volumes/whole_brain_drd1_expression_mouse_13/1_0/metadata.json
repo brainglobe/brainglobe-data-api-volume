@@ -1,0 +1,41 @@
+{
+  "name": "Whole-brain DRD1 expression - Mouse 13",
+  "description": "Light sheet fluorescence microscopy of DRD1 immunostaining across the whole brain",
+  "version": "1.0",
+  "license": "CC-BY-4.0",
+  "citation": "Jones et al 2026, https://doi.org/10.5678/drd1-lsfm",
+  "contributors": [
+    "Jones Lab, UCL"
+  ],
+  "subject_id": "e8d79f49-af6d-414c-8a6f-188a424e617b",
+  "project_id": "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d",
+  "channel_name": "DRD1",
+  "measured_quantity": "fluorescence intensity",
+  "studied_target": "DRD1",
+  "species": "Mus musculus",
+  "developmental_stage": "adult",
+  "technique": [
+    "immunostaining",
+    "light sheet fluorescence microscopy"
+  ],
+  "orientation": "asr",
+  "shape": [
+    528,
+    320,
+    456
+  ],
+  "voxel_size_um": [
+    25.0,
+    25.0,
+    25.0
+  ],
+  "coordinate_space": {
+    "name": "allen-adult-mouse-ccf-space",
+    "version": "2015"
+  },
+  "volume": {
+    "format": "ome-zarr",
+    "multiscale": true,
+    "path": "volume.ome.zarr"
+  }
+}

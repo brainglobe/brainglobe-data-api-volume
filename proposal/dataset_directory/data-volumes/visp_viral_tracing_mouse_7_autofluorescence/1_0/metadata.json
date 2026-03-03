@@ -1,0 +1,55 @@
+{
+  "name": "VISp viral tracing - Mouse 7 - autofluorescence",
+  "description": "AAV-GFP anterograde tracing from primary visual cortex (autofluorescence channel)",
+  "version": "1.0",
+  "license": "CC-BY-4.0",
+  "citation": "Smith et al 2025, https://doi.org/10.1234/visp-tracing",
+  "contributors": [
+    "Smith Lab, Sainsbury Wellcome Centre"
+  ],
+  "subject_id": "6513270e-269e-4d37-b2a7-4de452e6b438",
+  "project_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450",
+  "channel_name": "autofluorescence",
+  "measured_quantity": "fluorescence intensity",
+  "studied_target": "autofluorescence",
+  "species": "Mus musculus",
+  "developmental_stage": "adult",
+  "technique": [
+    "anterograde tracing",
+    "light sheet fluorescence microscopy"
+  ],
+  "orientation": "asr",
+  "shape": [
+    264,
+    160,
+    228
+  ],
+  "voxel_size_um": [
+    50.0,
+    50.0,
+    50.0
+  ],
+  "coordinate_space": {
+    "name": "allen-adult-mouse-ccf-space",
+    "version": "2015"
+  },
+  "volume": {
+    "format": "ome-zarr",
+    "multiscale": true,
+    "path": "volume.ome.zarr"
+  },
+  "injection_target": {
+    "regions": [
+      "VISp"
+    ],
+    "annotation_set": {
+      "name": "allen-adult-mouse-annotation",
+      "version": "2017"
+    }
+  },
+  "injection_coordinate": [
+    5700,
+    2800,
+    3600
+  ]
+}

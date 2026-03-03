@@ -7,7 +7,12 @@ Based on the atlas API v2.
 ```text
 proposal/example_dataset/
 └── data-volumes/
-    └── 550e8400-e29b-41d4-a716-446655440000/
+    ├── 550e8400-e29b-41d4-a716-446655440000/   # GFP channel
+    │   └── 1_0/
+    │       ├── metadata.json
+    │       └── volume.ome.zarr/
+    │           └── .placeholder
+    └── 660e8400-e29b-41d4-a716-446655440001/   # autofluorescence channel
         └── 1_0/
             ├── metadata.json
             └── volume.ome.zarr/
@@ -35,11 +40,11 @@ These are not from openMINDS (or I couldnt find them):
 * `dataset_version` - Semantic version (e.g. `"1.0"`).
 * `license` - Usage terms (e.g. `"CC-BY-4.0"`).
 * `species` -  species name (e.g. "Mus musculus") - I guess this should follow the brainglobe atlas api since each dataset should have a corresponding CCF in the atlas api
-* `biological_sex` - Female, male, hermaphrodite, not detectable.
 * `developmental_stage` - Life cycle class: adolescent, adult, embryo, infant, juvenile, etc.
 * `injection_target` - Injection target regions, nested with the annotation set they belong to: `{regions, annotation_set: {name, version}}`.
 * `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
 * `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density). Since each channel is its own dataset, this is always a single quantity.
+* `studied_target` - What were we trying to measure (e.g. DRD1, C-Fos, Nissl )
 * `digital_identifier` - Publication reference and DOI.
 * `anatomical_axes_orientation` - BrainGlobe orientation code (e.g. `"asr"`).
 * `voxel_size_um` - Voxel size in micrometers.
