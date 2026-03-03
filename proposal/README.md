@@ -69,6 +69,7 @@ This keeps each dataset simple (one volume = one measured quantity) and avoids t
 ## Additional Metadata Fields for Channel Linking
 
 * `subject_id` - UUID identifying the animal (subject) the data came from. All datasets derived from the same animal share this ID, allowing multi-channel or multi-modal data to be linked.
+* `project_id` - UUID identifying the project this dataset belongs to. Datasets produced as part of the same set (e.g. a study or publication) share this ID.
 * `channel_name` - Human-readable name for this channel (e.g. `"GFP"`, `"tdTomato"`, `"autofluorescence"`).
 
 ## Volume Fields
