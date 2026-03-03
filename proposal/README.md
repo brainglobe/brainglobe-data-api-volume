@@ -39,7 +39,7 @@ These are not from openMINDS (or I couldnt find them):
 * `developmental_stage` - Life cycle class: adolescent, adult, embryo, infant, juvenile, etc.
 * `injection_target` - Injection target regions, nested with the annotation set they belong to: `{regions, annotation_set: {name, version}}`.
 * `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
-* `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density).
+* `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density). Since each channel is its own dataset, this is always a single quantity.
 * `digital_identifier` - Publication reference and DOI.
 * `anatomical_axes_orientation` - BrainGlobe orientation code (e.g. `"asr"`).
 * `voxel_size_um` - Voxel size in micrometers.
@@ -56,9 +56,23 @@ These are not from openMINDS (or I couldnt find them):
 
 
 
+## Channel Splitting
+
+Each channel of a multi-channel volume is stored as a **separate dataset** with its own UUID and metadata. This means:
+
+- A single-channel acquisition produces one dataset.
+- A multi-channel acquisition (e.g. two fluorescence channels) produces one dataset per channel.
+- Related channels can be linked via a shared `subject_id` (animal UUID) so they can be grouped back together when needed.
+
+This keeps each dataset simple (one volume = one measured quantity) and avoids the complexity of per-channel metadata arrays.
+
+## Additional Metadata Fields for Channel Linking
+
+* `subject_id` - UUID identifying the animal (subject) the data came from. All datasets derived from the same animal share this ID, allowing multi-channel or multi-modal data to be linked.
+* `channel_name` - Human-readable name for this channel (e.g. `"GFP"`, `"tdTomato"`, `"autofluorescence"`).
+
 ## Volume Fields
 
 * `volume.format` - Data format (e.g. `"ome-zarr"`).
 * `volume.multiscale` - Whether the volume has multiple resolution levels.
 * `volume.path` - Relative path to the volume file within the dataset directory.
-* `volume.channels` - Per-channel metadata: `[{index, name, ...]`. Multi-channel data uses OME-Zarr's built-in channel support; this array describes what each channel represents. - maybe we should split these itno seperate datasets
