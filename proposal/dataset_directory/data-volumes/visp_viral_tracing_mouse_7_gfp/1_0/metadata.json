@@ -7,7 +7,6 @@
   "contributors": [
     "Smith Lab, Sainsbury Wellcome Centre"
   ],
-  "subject_id": "6513270e-269e-4d37-b2a7-4de452e6b438",
   "project_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450",
   "channel_name": "GFP",
   "measured_quantity": "fluorescence intensity",
@@ -29,21 +28,19 @@
     50.0,
     50.0
   ],
-  "coordinate_space": {
-    "name": "allen-adult-mouse-ccf-space",
-    "version": "2015"
-  },
+  "coordinate_space": "allen_mouse",
   "volume": {
     "format": "ome-zarr",
     "multiscale": true,
     "path": "volume.ome.zarr"
   },
+  "subject_id": "6513270e-269e-4d37-b2a7-4de452e6b438",
   "injection_target": {
     "regions": [
       "VISp"
     ],
     "annotation_set": {
-      "name": "allen-adult-mouse-annotation",
+      "name": "allen_mouse",
       "version": "2017"
     }
   },

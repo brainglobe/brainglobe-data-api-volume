@@ -1,0 +1,43 @@
+{
+  "name": "Whole-brain c-Fos population average",
+  "description": "Average c-Fos expression map from 12 adult mice after novel environment exposure",
+  "version": "1.0",
+  "license": "CC-BY-4.0",
+  "citation": "Lee et al 2026, https://doi.org/10.9999/cfos-avg",
+  "contributors": [
+    "Lee Lab, Francis Crick Institute"
+  ],
+  "project_id": "bdd640fb-0667-4ad1-9c80-317fa3b1799d",
+  "channel_name": "c-Fos",
+  "measured_quantity": "cell density",
+  "studied_target": "c-Fos",
+  "species": "Mus musculus",
+  "developmental_stage": "adult",
+  "technique": [
+    "immunostaining",
+    "light sheet fluorescence microscopy"
+  ],
+  "orientation": "asr",
+  "shape": [
+    528,
+    320,
+    456
+  ],
+  "voxel_size_um": [
+    25.0,
+    25.0,
+    25.0
+  ],
+  "coordinate_space": "allen_mouse",
+  "volume": {
+    "format": "ome-zarr",
+    "multiscale": true,
+    "path": "volume.ome.zarr"
+  },
+  "sample_number": 12,
+  "number_of_female": 6,
+  "number_of_male": 6,
+  "number_of_hermaphrodite": 0,
+  "age": 90,
+  "age_units": "days"
+}

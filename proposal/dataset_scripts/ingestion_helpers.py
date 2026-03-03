@@ -32,7 +32,6 @@ def create_dataset(
     license="CC-BY-4.0",
     citation,
     contributors,
-    subject_id,
     project_id,
     channel_name,
     measured_quantity,
@@ -44,19 +43,24 @@ def create_dataset(
     shape,
     voxel_size_um,
     coordinate_space,
+    subject_id=None,
     injection_target=None,
     injection_coordinate=None,
+    **extra_fields,
 ):
     """Create a dataset metadata dict and matching openMINDS objects.
 
     Parameters are plain Python types (strings, lists, dicts) matching
     the fields in proposal/README.md.  Returns ``(metadata_dict,
-    openminds_nodes)`` where *openminds_nodes* is a list of openMINDS
-    objects ready to add to a Collection.
+    openminds_nodes, folder_name)``.
 
     The dataset folder name is derived from ``name`` and
     ``channel_name`` (e.g. ``"visp_viral_tracing_mouse_7_gfp"``),
     so re-running the script is idempotent.
+
+    Any additional keyword arguments (e.g. ``sample_number``,
+    ``number_of_female``) are stored in metadata.json as-is.
+    These are fields not represented in openMINDS.
     """
     folder_name = _make_folder_name(name, channel_name)
 
@@ -68,7 +72,6 @@ def create_dataset(
         "license": license,
         "citation": citation,
         "contributors": contributors,
-        "subject_id": subject_id,
         "project_id": project_id,
         "channel_name": channel_name,
         "measured_quantity": measured_quantity,
@@ -86,23 +89,43 @@ def create_dataset(
             "path": "volume.ome.zarr",
         },
     }
+    if subject_id is not None:
+        metadata["subject_id"] = subject_id
     if injection_target is not None:
         metadata["injection_target"] = injection_target
     if injection_coordinate is not None:
         metadata["injection_coordinate"] = injection_coordinate
+    # extra (non-openMINDS) fields go straight into the metadata
+    metadata.update(extra_fields)
 
     # ── openMINDS objects ─────────────────────────────────────────
-    subject_state = omcore.SubjectState(
-        age_category=_resolve_age_category(developmental_stage),
-        internal_identifier=subject_id,
-    )
-    subject = omcore.Subject(
-        internal_identifier=subject_id,
-        species=_resolve_species(species),
-        studied_states=[subject_state],
-    )
+    nodes = []
+
+    if subject_id is not None:
+        # single-animal dataset
+        subject_state = omcore.SubjectState(
+            age_category=_resolve_age_category(developmental_stage),
+            internal_identifier=subject_id,
+        )
+        subject = omcore.Subject(
+            internal_identifier=subject_id,
+            species=_resolve_species(species),
+            studied_states=[subject_state],
+        )
+        nodes.extend([subject_state, subject])
+        specimens = [subject]
+    else:
+        # population average — use SubjectGroup
+        group = omcore.SubjectGroup(
+            internal_identifier=folder_name,
+            species=_resolve_species(species),
+            number_of_subjects=extra_fields.get("sample_number"),
+        )
+        nodes.append(group)
+        specimens = [group]
+
     coord = _CoordSpace(
-        name=f"{coordinate_space['name']}-v{coordinate_space['version']}",
+        name=coordinate_space,
         anatomical_axes_orientation=_resolve_orientation(orientation),
         native_unit=omterms.UnitOfMeasurement.micrometer,
     )
@@ -120,11 +143,11 @@ def create_dataset(
         version_innovation=f"{channel_name}: {measured_quantity}",
         description=description,
         techniques=_resolve_techniques(technique),
-        studied_specimens=[subject],
+        studied_specimens=specimens,
         repository=repo,
     )
 
-    nodes = [subject_state, subject, coord, repo, ds_version]
+    nodes.extend([coord, repo, ds_version])
     return metadata, nodes, folder_name
 
 

@@ -7,7 +7,6 @@
   "contributors": [
     "Jones Lab, UCL"
   ],
-  "subject_id": "e8d79f49-af6d-414c-8a6f-188a424e617b",
   "project_id": "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d",
   "channel_name": "DRD1",
   "measured_quantity": "fluorescence intensity",
@@ -29,13 +28,11 @@
     25.0,
     25.0
   ],
-  "coordinate_space": {
-    "name": "allen-adult-mouse-ccf-space",
-    "version": "2015"
-  },
+  "coordinate_space": "allen_mouse",
   "volume": {
     "format": "ome-zarr",
     "multiscale": true,
     "path": "volume.ome.zarr"
-  }
+  },
+  "subject_id": "e8d79f49-af6d-414c-8a6f-188a424e617b"
 }

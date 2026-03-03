@@ -25,14 +25,11 @@ COMMON = dict(
     orientation="asr",
     shape=[264, 160, 228],
     voxel_size_um=[50.0, 50.0, 50.0],
-    coordinate_space={
-        "name": "allen-adult-mouse-ccf-space",
-        "version": "2015",
-    },
+    coordinate_space="allen_mouse",
     injection_target={
         "regions": ["VISp"],
         "annotation_set": {
-            "name": "allen-adult-mouse-annotation",
+            "name": "allen_mouse",
             "version": "2017",
         },
     },

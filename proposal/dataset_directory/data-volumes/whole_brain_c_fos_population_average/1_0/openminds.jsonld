@@ -5,35 +5,12 @@
   "@graph": [
     {
       "@id": "_:000000",
-      "@type": "https://openminds.ebrains.eu/core/SubjectState",
-      "ageCategory": {
-        "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult"
-      },
-      "internalIdentifier": "e8d79f49-af6d-414c-8a6f-188a424e617b"
-    },
-    {
-      "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult",
-      "@type": "https://openminds.ebrains.eu/controlledTerms/AgeCategory",
-      "definition": "'Adult' categorizes the life cycle stage of an animal or human that reached sexual maturity.",
-      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0729043",
-      "name": "adult",
-      "preferredOntologyIdentifier": "http://purl.obolibrary.org/obo/UBERON_0000113",
-      "synonym": [
-        "adult stage",
-        "post-juvenile adult",
-        "post-juvenile adult stage"
-      ]
-    },
-    {
-      "@id": "_:000002",
-      "@type": "https://openminds.ebrains.eu/core/Subject",
-      "internalIdentifier": "e8d79f49-af6d-414c-8a6f-188a424e617b",
-      "species": {
-        "@id": "https://openminds.ebrains.eu/instances/species/musMusculus"
-      },
-      "studiedState": [
+      "@type": "https://openminds.ebrains.eu/core/SubjectGroup",
+      "internalIdentifier": "whole_brain_c_fos_population_average",
+      "numberOfSubjects": 12,
+      "species": [
         {
-          "@id": "_:000000"
+          "@id": "https://openminds.ebrains.eu/instances/species/musMusculus"
         }
       ]
     },
@@ -51,7 +28,7 @@
       ]
     },
     {
-      "@id": "_:000004",
+      "@id": "_:000002",
       "@type": "https://openminds.ebrains.eu/sands/CustomCoordinateSpace",
       "anatomicalAxesOrientation": {
         "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR"
@@ -73,38 +50,38 @@
       "name": "micrometer"
     },
     {
-      "@id": "_:000007",
+      "@id": "_:000005",
       "@type": "https://openminds.ebrains.eu/core/FileRepository",
-      "IRI": "file://data-volumes/whole_brain_drd1_expression_mouse_13/1_0/volume.ome.zarr",
-      "name": "DRD1 volume"
+      "IRI": "file://data-volumes/whole_brain_c_fos_population_average/1_0/volume.ome.zarr",
+      "name": "c-Fos volume"
     },
     {
-      "@id": "_:000008",
+      "@id": "_:000006",
       "@type": "https://openminds.ebrains.eu/core/DatasetVersion",
-      "description": "Light sheet fluorescence microscopy of DRD1 immunostaining across the whole brain",
-      "fullName": "Whole-brain DRD1 expression - Mouse 13",
+      "description": "Average c-Fos expression map from 12 adult mice after novel environment exposure",
+      "fullName": "Whole-brain c-Fos population average",
       "repository": {
-        "@id": "_:000007"
+        "@id": "_:000005"
       },
-      "shortName": "DRD1",
+      "shortName": "c-Fos",
       "studiedSpecimen": [
         {
-          "@id": "_:000002"
+          "@id": "_:000000"
         }
       ],
       "technique": [
         {
-          "@id": "_:000009"
+          "@id": "_:000007"
         },
         {
           "@id": "https://openminds.ebrains.eu/instances/technique/lightSheetFluorescenceMicroscopy"
         }
       ],
       "versionIdentifier": "1.0",
-      "versionInnovation": "DRD1: fluorescence intensity"
+      "versionInnovation": "c-Fos: cell density"
     },
     {
-      "@id": "_:000009",
+      "@id": "_:000007",
       "@type": "https://openminds.ebrains.eu/controlledTerms/Technique",
       "name": "immunostaining"
     },

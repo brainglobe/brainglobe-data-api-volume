@@ -27,10 +27,7 @@ drd1 = create_dataset(
     orientation="asr",
     shape=[528, 320, 456],
     voxel_size_um=[25.0, 25.0, 25.0],
-    coordinate_space={
-        "name": "allen-adult-mouse-ccf-space",
-        "version": "2015",
-    },
+    coordinate_space="allen_mouse",
 )
 
 save_datasets([drd1])

@@ -56,7 +56,7 @@
       "anatomicalAxesOrientation": {
         "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR"
       },
-      "name": "allen-adult-mouse-ccf-space-v2015",
+      "name": "allen_mouse",
       "nativeUnit": {
         "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/micrometer"
       }
