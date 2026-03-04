@@ -3,13 +3,13 @@
 import random
 import uuid
 
-from ingestion_helpers import create_dataset, save_datasets
+from ingestion_helpers import create_array, save_arrays
 
 rng = random.Random(42)
 
 PROJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
 
-cfos = create_dataset(
+cfos = create_array(
     name="Whole-brain c-Fos population average",
     description="Average c-Fos expression map from 12 adult mice "
     "after novel environment exposure",
@@ -41,4 +41,4 @@ cfos = create_dataset(
     age_units="days",
 )
 
-save_datasets([cfos])
+save_arrays([cfos])

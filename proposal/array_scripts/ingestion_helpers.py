@@ -1,7 +1,7 @@
-"""Helpers that wrap openMINDS boilerplate for dataset ingestion.
+"""Helpers that wrap openMINDS boilerplate for array ingestion.
 
 Usage:
-    from ingestion_helpers import create_dataset, save_datasets
+    from ingestion_helpers import create_array, save_arrays
 
 Requires: pip install openMINDS
 """
@@ -21,10 +21,10 @@ _CoordSpace = getattr(
     getattr(omsands, "CustomCoordinateSpace", None),
 )
 
-OUTPUT_DIR = Path(__file__).parent.parent / "dataset_directory" / "data-volumes"
+OUTPUT_DIR = Path(__file__).parent.parent / "array_directory" / "data-volumes"
 
 
-def create_dataset(
+def create_array(
     *,
     name,
     description,
@@ -53,13 +53,13 @@ def create_dataset(
     injection_coordinate=None,
     **extra_fields,
 ):
-    """Create a dataset metadata dict and matching openMINDS objects.
+    """Create an array metadata dict and matching openMINDS objects.
 
     Parameters are plain Python types (strings, lists, dicts) matching
     the fields in proposal/README.md.  Returns ``(metadata_dict,
     openminds_nodes, folder_name)``.
 
-    The dataset folder name is derived from ``name`` and
+    The array folder name is derived from ``name`` and
     ``channel_name`` (e.g. ``"visp_viral_tracing_mouse_7_gfp"``),
     so re-running the script is idempotent.
 
@@ -112,7 +112,7 @@ def create_dataset(
     nodes = []
 
     if subject_id is not None:
-        # single-animal dataset
+        # single-animal array
         state_kwargs = {
             "age_category": _resolve_age_category(developmental_stage),
             "internal_identifier": subject_id,
@@ -169,15 +169,15 @@ def create_dataset(
     return metadata, nodes, folder_name
 
 
-def save_datasets(datasets, output_dir=None):
+def save_arrays(arrays, output_dir=None):
     """Write metadata.json files and a combined openMINDS collection.
 
-    *datasets* is a list of ``(metadata_dict, openminds_nodes,
-    folder_name)`` tuples as returned by :func:`create_dataset`.
+    *arrays* is a list of ``(metadata_dict, openminds_nodes,
+    folder_name)`` tuples as returned by :func:`create_array`.
     """
     output_dir = Path(output_dir) if output_dir else OUTPUT_DIR
 
-    for meta, nodes, folder_name in datasets:
+    for meta, nodes, folder_name in arrays:
         # write metadata.json
         version_dir = meta["version"].replace(".", "_")
         ds_dir = output_dir / folder_name / version_dir
@@ -199,7 +199,7 @@ def save_datasets(datasets, output_dir=None):
 # ── private helpers ───────────────────────────────────────────────────
 
 def _make_folder_name(name, channel_name):
-    """Derive a deterministic folder name from dataset name.
+    """Derive a deterministic folder name from array name.
 
     If the name doesn't already contain the channel name, it is
     appended.  E.g. "VISp viral tracing - Mouse 7 - GFP"

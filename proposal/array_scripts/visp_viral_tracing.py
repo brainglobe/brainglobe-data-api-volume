@@ -3,7 +3,7 @@
 import random
 import uuid
 
-from ingestion_helpers import create_dataset, save_datasets
+from ingestion_helpers import create_array, save_arrays
 
 rng = random.Random(7)
 SUBJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
@@ -45,7 +45,7 @@ COMMON = dict(
     injection_coordinate=[5700, 2800, 3600],
 )
 
-gfp = create_dataset(
+gfp = create_array(
     name="VISp viral tracing - Mouse 7 - GFP",
     description="AAV-GFP anterograde tracing from primary visual cortex "
     "(GFP channel)",
@@ -55,7 +55,7 @@ gfp = create_dataset(
     **COMMON,
 )
 
-autofluo = create_dataset(
+autofluo = create_array(
     name="VISp viral tracing - Mouse 7 - autofluorescence",
     description="AAV-GFP anterograde tracing from primary visual cortex "
     "(autofluorescence channel)",
@@ -65,4 +65,4 @@ autofluo = create_dataset(
     **COMMON,
 )
 
-save_datasets([gfp, autofluo])
+save_arrays([gfp, autofluo])

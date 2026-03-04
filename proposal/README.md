@@ -1,12 +1,12 @@
 # Implementation of data api proposal
 
-Based on the atlas API v2. This document provides a broad overview of the data API. 
+Based on the atlas API v2. This document provides a broad overview of the data API.
 
 * basic_usage.py shows what it will look like to actually use the API.
-* dataset_scripts shows a mock ingestion.
-* dataset_directory shows how the volumes will be stored
+* array_scripts shows a mock ingestion.
+* array_directory shows how the volumes will be stored
 
-## Dataset Structure
+## Array Structure
 
 ```text
 proposal/example_dataset/
@@ -24,7 +24,7 @@ proposal/example_dataset/
 ```
 ### Notes
 
-- each dataset is given a UUID
+- each array is given a UUID
 - volume data stored as zarr
 - We use fields from openminds, stored in a json
 - Metadata will be stored as a sqlite database so we can query quickly. We will build the database from the jsons.
@@ -34,20 +34,20 @@ proposal/example_dataset/
 
 These are not from openMINDS (or I couldnt find them):
 
-* `id` - UUID, unique dataset identifier.
+* `id` - UUID, unique array identifier.
 * `injection_coordinate` - Specific coordinate in the related coordinate space (e.g. `[6600, 4000, 5400]`).
 
 ## openMINDS-derived fields
-* `name` -  dataset name.
+* `name` -  array name.
 * `contributors` - Labs or authors who produced the data.
-* `description` - What the dataset contains.
+* `description` - What the array contains.
 * `dataset_version` - Semantic version (e.g. `"1.0"`).
 * `license` - Usage terms (e.g. `"CC-BY-4.0"`).
-* `species` -  species name (e.g. "Mus musculus") - I guess this should follow the brainglobe atlas api since each dataset should have a corresponding CCF in the atlas api
+* `species` -  species name (e.g. "Mus musculus") - I guess this should follow the brainglobe atlas api since each array should have a corresponding CCF in the atlas api
 * `developmental_stage` - Life cycle class: adolescent, adult, embryo, infant, juvenile, etc.
 * `injection_target` - Injection target regions, nested with the annotation set they belong to: `{regions, annotation_set: {name, version}}`. The `name` is a BrainGlobe atlas name (e.g. `"allen_mouse"`).
 * `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
-* `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density). Since each channel is its own dataset, this is always a single quantity.
+* `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density). Since each channel is its own array, this is always a single quantity.
 * `studied_target` - What were we trying to measure (e.g. DRD1, C-Fos, Nissl )
 * `digital_identifier` - DOI for the associated publication (e.g. `"10.1234/example"`).
 * `anatomical_axes_orientation` - BrainGlobe orientation code (e.g. `"asr"`).
@@ -67,23 +67,23 @@ These are not from openMINDS (or I couldnt find them):
 
 ## Channel Splitting
 
-Each channel of a multi-channel volume is stored as a **separate dataset** with its own UUID and metadata. This means:
+Each channel of a multi-channel volume is stored as a **separate array** with its own UUID and metadata. This means:
 
-- A single-channel acquisition produces one dataset.
-- A multi-channel acquisition (e.g. two fluorescence channels) produces one dataset per channel.
+- A single-channel acquisition produces one array.
+- A multi-channel acquisition (e.g. two fluorescence channels) produces one array per channel.
 - Related channels can be linked via a shared `subject_id` (animal UUID) so they can be grouped back together when needed.
 
-This keeps each dataset simple (one volume = one measured quantity) and avoids the complexity of per-channel metadata arrays.
+This keeps each array simple (one volume = one measured quantity) and avoids the complexity of per-channel metadata arrays.
 
 ## Project Metadata
 
-* `project_id` - UUID identifying the project this dataset belongs to. Datasets produced as part of the same set (e.g. a study or publication) share this ID.
+* `project_id` - UUID identifying the project this array belongs to. Arrays produced as part of the same set (e.g. a study or publication) share this ID.
 * `project_name` - Human-readable project name (e.g. `"VISp viral tracing"`).
 * `project_description` - Brief description of the project's aims.
 
 ## Subject (Animal) Metadata
 
-* `subject_id` - UUID identifying the animal (subject) the data came from. All datasets derived from the same animal share this ID, allowing multi-channel or multi-modal data to be linked. An individual animal is treated as a population average where n=1.
+* `subject_id` - UUID identifying the animal (subject) the data came from. All arrays derived from the same animal share this ID, allowing multi-channel or multi-modal data to be linked. An individual animal is treated as a population average where n=1.
 * `strain` - Mouse strain or line (e.g. `"C57BL/6J"`, `"Drd1a-Cre"`).
 * `age` - Age at time of imaging (or average age for population averages).
 * `age_units` - Units for interpreting the `age` field (e.g. `"days"`, `"weeks"`).
@@ -91,4 +91,3 @@ This keeps each dataset simple (one volume = one measured quantity) and avoids t
 ## Channel Metadata
 
 * `channel_name` - Human-readable name for this channel (e.g. `"GFP"`, `"tdTomato"`, `"autofluorescence"`).
-

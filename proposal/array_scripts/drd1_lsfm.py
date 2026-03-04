@@ -3,14 +3,14 @@
 import random
 import uuid
 
-from ingestion_helpers import create_dataset, save_datasets
+from ingestion_helpers import create_array, save_arrays
 
 rng = random.Random(13)
 
 PROJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
 SUBJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
 
-drd1 = create_dataset(
+drd1 = create_array(
     name="Whole-brain DRD1 expression - Mouse 13",
     description="Light sheet fluorescence microscopy of DRD1 "
     "immunostaining across the whole brain",
@@ -42,4 +42,4 @@ drd1 = create_dataset(
     coordinate_space="allen_mouse",
 )
 
-save_datasets([drd1])
+save_arrays([drd1])
