@@ -3,36 +3,44 @@
 import random
 import uuid
 
-from ingestion_helpers import create_array, save_arrays
+from ingestion_helpers import create_project, create_subject, create_array, save_arrays
 
 rng = random.Random(13)
-
 PROJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
 SUBJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
 
-drd1 = create_array(
-    name="Whole-brain DRD1 expression - Mouse 13",
-    description="Light sheet fluorescence microscopy of DRD1 "
-    "immunostaining across the whole brain",
+project = create_project(
+    project_id=PROJECT_ID,
+    name="Whole-brain DRD1 expression",
+    description="Mapping DRD1 expression across the whole brain "
+    "using immunostaining and light sheet microscopy",
     digital_identifier="https://doi.org/10.5678/drd1-lsfm",
     contributors=["Jones Lab, UCL"],
-    project_id=PROJECT_ID,
-    project_name="Whole-brain DRD1 expression",
-    project_description="Mapping DRD1 expression across the whole brain "
-    "using immunostaining and light sheet microscopy",
+)
+
+subject = create_subject(
     subject_id=SUBJECT_ID,
+    species="Mus musculus",
+    developmental_stage="adult",
     strain="Drd1a-Cre",
+    sample_number=1,
     number_of_female=1,
     number_of_male=0,
     number_of_hermaphrodite=0,
     age=120,
     age_units="days",
+)
+
+drd1 = create_array(
+    name="Whole-brain DRD1 expression - Mouse 13",
+    description="Light sheet fluorescence microscopy of DRD1 "
+    "immunostaining across the whole brain",
+    project=project,
+    subject=subject,
     channel_name="DRD1",
     measured_quantity="fluorescence intensity",
     studied_target="DRD1",
     studied_gene_ensembl_id="ENSMUSG00000021478",
-    species="Mus musculus",
-    developmental_stage="adult",
     technique=[
         "immunostaining",
         "light sheet fluorescence microscopy",
@@ -43,4 +51,4 @@ drd1 = create_array(
     coordinate_space="allen_mouse",
 )
 
-save_arrays([drd1])
+save_arrays([drd1], projects=[project], subjects=[subject])

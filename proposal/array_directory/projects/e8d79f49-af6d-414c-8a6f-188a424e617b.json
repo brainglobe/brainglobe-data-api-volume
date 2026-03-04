@@ -1,0 +1,9 @@
+{
+  "project_id": "e8d79f49-af6d-414c-8a6f-188a424e617b",
+  "name": "Whole-brain DRD1 expression",
+  "description": "Mapping DRD1 expression across the whole brain using immunostaining and light sheet microscopy",
+  "digital_identifier": "https://doi.org/10.5678/drd1-lsfm",
+  "contributors": [
+    "Jones Lab, UCL"
+  ]
+}

@@ -1,18 +1,13 @@
 {
+  "id": "2b724432-51b2-5e23-8d4f-b226c2f7aa72",
   "name": "Whole-brain c-Fos population average",
   "description": "Average c-Fos expression map from 12 adult mice after novel environment exposure",
   "version": "1.0",
   "license": "CC-BY-4.0",
-  "digital_identifier": "https://doi.org/10.9999/cfos-avg",
-  "contributors": [
-    "Lee Lab, Francis Crick Institute"
-  ],
   "project_id": "bdd640fb-0667-4ad1-9c80-317fa3b1799d",
   "channel_name": "c-Fos",
   "measured_quantity": "cell density",
   "studied_target": "c-Fos",
-  "species": "Mus musculus",
-  "developmental_stage": "adult",
   "technique": [
     "immunostaining",
     "light sheet fluorescence microscopy"
@@ -29,13 +24,13 @@
     25.0
   ],
   "coordinate_space": "allen_mouse",
+  "species": "Mus musculus",
+  "developmental_stage": "adult",
+  "sample_number": 12,
+  "number_of_male": 6,
+  "number_of_female": 6,
+  "number_of_hermaphrodite": 0,
   "age": 90,
   "age_units": "days",
-  "project_name": "Whole-brain c-Fos activity mapping",
-  "project_description": "Population average c-Fos expression after novel environment exposure in adult mice",
-  "studied_gene_ensembl_id": "ENSMUSG00000021250",
-  "sample_number": 12,
-  "number_of_female": 6,
-  "number_of_male": 6,
-  "number_of_hermaphrodite": 0
+  "studied_gene_ensembl_id": "ENSMUSG00000021250"
 }

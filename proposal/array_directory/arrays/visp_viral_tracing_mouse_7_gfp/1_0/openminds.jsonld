@@ -87,7 +87,7 @@
     {
       "@id": "_:000008",
       "@type": "https://openminds.ebrains.eu/core/FileRepository",
-      "IRI": "file://data-volumes/visp_viral_tracing_mouse_7_gfp/1_0/volume.ome.zarr",
+      "IRI": "file://arrays/visp_viral_tracing_mouse_7_gfp/1_0/volume.ome.zarr",
       "name": "GFP volume"
     },
     {

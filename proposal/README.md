@@ -6,64 +6,79 @@ Based on the atlas API v2. This document provides a broad overview of the data A
 * array_scripts shows a mock ingestion.
 * array_directory shows how the volumes will be stored
 
-## Array Structure
+## Directory Structure
 
 ```text
-proposal/example_dataset/
-└── data-volumes/
-    ├── 550e8400-e29b-41d4-a716-446655440000/   # GFP channel
-    │   └── 1_0/
-    │       ├── metadata.json
-    │       └── volume.ome.zarr/
-    │           └── .placeholder
-    └── 660e8400-e29b-41d4-a716-446655440001/   # autofluorescence channel
+array_directory/
+├── projects/
+│   └── <project_id>.json
+├── subjects/
+│   └── <subject_id>.json           # only for individual animals
+└── arrays/
+    └── visp_viral_tracing_mouse_7_gfp/
         └── 1_0/
             ├── metadata.json
+            ├── openminds.jsonld
             └── volume.ome.zarr/
-                └── .placeholder
 ```
+
 ### Notes
 
-- each array is given a UUID
-- volume data stored as zarr
-- We use fields from openminds, stored in a json
-- Metadata will be stored as a sqlite database so we can query quickly. We will build the database from the jsons.
+- each array is given a UUID (`id` field in metadata.json)
+- volume data stored as OME-Zarr
+- We use fields from openMINDS, stored in JSON
+- An openMINDS JSON-LD file is generated alongside each array for interoperability
+- Metadata will be stored as a SQLite database so we can query quickly. We will build the database from the JSONs.
+- Projects and subjects are separate entities, linked by ID to avoid duplication
 
 
-## Metadata fields
+## Three Entities
 
-These are not from openMINDS (or I couldnt find them):
+The schema has three entity types. **Projects** and **subjects** are
+defined once and referenced by ID from each **array**.
 
-* `id` - UUID, unique array identifier.
-* `injection_coordinate` - Specific coordinate in the related coordinate space (e.g. `[6600, 4000, 5400]`).
-
-## openMINDS-derived fields
-* `name` -  array name.
+### Project (required fields)
+* `project_id` - UUID identifying the project.
+* `name` - Human-readable project name (e.g. `"VISp viral tracing"`).
+* `description` - Brief description of the project's aims.
+* `digital_identifier` - DOI for the associated publication (e.g. `"https://doi.org/10.1234/example"`).
 * `contributors` - Labs or authors who produced the data.
-* `description` - What the array contains.
-* `dataset_version` - Semantic version (e.g. `"1.0"`).
-* `license` - Usage terms (e.g. `"CC-BY-4.0"`).
-* `species` -  species name (e.g. "Mus musculus") - I guess this should follow the brainglobe atlas api since each array should have a corresponding CCF in the atlas api
+
+### Subject (required fields)
+* `species` - Species name (e.g. `"Mus musculus"`). Should correspond to a BrainGlobe atlas species.
 * `developmental_stage` - Life cycle class: adolescent, adult, embryo, infant, juvenile, etc.
-* `injection_target` - Injection target regions, nested with the annotation set they belong to: `{regions, annotation_set: {name, version}}`. The `name` is a BrainGlobe atlas name (e.g. `"allen_mouse"`).
-* `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
+* `sample_number` - Number of animals (1 for an individual, >1 for a population average).
+* `number_of_male` - Number of male animals.
+* `number_of_female` - Number of female animals.
+* `number_of_hermaphrodite` - Number of hermaphrodite animals.
+
+#### Subject (optional fields)
+* `subject_id` - UUID identifying an individual animal. Present for single-animal arrays, absent for population averages. All arrays derived from the same animal share this ID, allowing multi-channel data to be linked.
+* `strain` - Mouse strain or line (e.g. `"C57BL/6J"`, `"Drd1a-Cre"`).
+* `age` - Age at time of imaging (or average age for population averages).
+* `age_units` - Units for interpreting the `age` field (e.g. `"days"`, `"weeks"`).
+
+### Array (required fields)
+* `id` - UUID, unique array identifier (generated deterministically from the folder name and version).
+* `name` - Array name.
+* `description` - What the array contains.
+* `version` - Semantic version (e.g. `"1.0"`).
+* `license` - Usage terms (e.g. `"CC-BY-4.0"`).
+* `project_id` - Reference to the project this array belongs to.
+* `channel_name` - Human-readable name for this channel (e.g. `"GFP"`, `"tdTomato"`, `"autofluorescence"`).
 * `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density). Since each channel is its own array, this is always a single quantity.
-* `studied_target` - What were we trying to measure (e.g. DRD1, C-Fos, Nissl )
-* `studied_gene_ensembl_id` - Ensembl gene ID for the studied target, if applicable (e.g. `"ENSMUSG00000021478"` for DRD1).
-* `digital_identifier` - DOI for the associated publication (e.g. `"10.1234/example"`).
-* `anatomical_axes_orientation` - BrainGlobe orientation code (e.g. `"asr"`).
+* `studied_target` - What were we trying to measure (e.g. DRD1, c-Fos, Nissl).
+* `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
+* `orientation` - BrainGlobe orientation code (e.g. `"asr"`).
+* `shape` - Volume dimensions in voxels.
 * `voxel_size_um` - Voxel size in micrometers.
 * `coordinate_space` - The BrainGlobe atlas name the data is registered to (e.g. `"allen_mouse"`). Must be a valid atlas in `brainglobe_atlasapi`. Resolution is not included here — it is captured by `voxel_size_um`.
-* `shape` - Volume dimensions in voxels.
 
-## my fields for handling population average datasets
-* `sample_number` -  number of animals used to create this average.
-* `number_of_female` -  the number of female animals used to create this average.
-* `number_of_male` -  the number of male animals used to create this average.
-* `number_of_hemaphrodite` -  the number of hemaprodite animals used to create this average.
-* `age` -  The average age of animals used in this dataset
-* `age_units` -  the units for interpreting the age variable
-
+#### Array (optional fields)
+* `subject_id` - Reference to the subject (present for individual animals).
+* `studied_gene_ensembl_id` - Ensembl gene ID for the studied target, if applicable (e.g. `"ENSMUSG00000021478"` for DRD1).
+* `injection_target` - Injection target regions, nested with the annotation set they belong to: `{regions, annotation_set: {name, version}}`. The `name` is a BrainGlobe atlas name (e.g. `"allen_mouse"`).
+* `injection_coordinate` - Specific coordinate in the related coordinate space (e.g. `[5700, 2800, 3600]`).
 
 
 ## Channel Splitting
@@ -76,19 +91,11 @@ Each channel of a multi-channel volume is stored as a **separate array** with it
 
 This keeps each array simple (one volume = one measured quantity) and avoids the complexity of per-channel metadata arrays.
 
-## Project Metadata
+## Population Averages
 
-* `project_id` - UUID identifying the project this array belongs to. Arrays produced as part of the same set (e.g. a study or publication) share this ID.
-* `project_name` - Human-readable project name (e.g. `"VISp viral tracing"`).
-* `project_description` - Brief description of the project's aims.
+An individual animal is treated as a population average where n=1. This keeps the schema uniform:
 
-## Subject (Animal) Metadata
+- Individual: `sample_number=1`, `number_of_male=1`, `number_of_female=0`, etc.
+- Population: `sample_number=12`, `number_of_male=6`, `number_of_female=6`, etc.
 
-* `subject_id` - UUID identifying the animal (subject) the data came from. All arrays derived from the same animal share this ID, allowing multi-channel or multi-modal data to be linked. An individual animal is treated as a population average where n=1.
-* `strain` - Mouse strain or line (e.g. `"C57BL/6J"`, `"Drd1a-Cre"`).
-* `age` - Age at time of imaging (or average age for population averages).
-* `age_units` - Units for interpreting the `age` field (e.g. `"days"`, `"weeks"`).
-
-## Channel Metadata
-
-* `channel_name` - Human-readable name for this channel (e.g. `"GFP"`, `"tdTomato"`, `"autofluorescence"`).
+Population averages have no `subject_id` (there is no single animal to reference). Their subject metadata is embedded directly in the array metadata.json rather than stored as a separate file.

@@ -3,30 +3,37 @@
 import random
 import uuid
 
-from ingestion_helpers import create_array, save_arrays
+from ingestion_helpers import create_project, create_subject, create_array, save_arrays
 
 rng = random.Random(7)
 SUBJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
 PROJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
 
-COMMON = dict(
-    version="1.0",
-    license="CC-BY-4.0",
+project = create_project(
+    project_id=PROJECT_ID,
+    name="VISp viral tracing",
+    description="Anterograde tracing from primary visual cortex "
+    "using AAV-GFP in adult mice",
     digital_identifier="https://doi.org/10.1234/visp-tracing",
     contributors=["Smith Lab, Sainsbury Wellcome Centre"],
-    project_id=PROJECT_ID,
-    project_name="VISp viral tracing",
-    project_description="Anterograde tracing from primary visual cortex "
-    "using AAV-GFP in adult mice",
+)
+
+subject = create_subject(
     subject_id=SUBJECT_ID,
+    species="Mus musculus",
+    developmental_stage="adult",
     strain="C57BL/6J",
+    sample_number=1,
     number_of_male=1,
     number_of_female=0,
     number_of_hermaphrodite=0,
     age=90,
     age_units="days",
-    species="Mus musculus",
-    developmental_stage="adult",
+)
+
+COMMON = dict(
+    project=project,
+    subject=subject,
     technique=[
         "anterograde tracing",
         "light sheet fluorescence microscopy",
@@ -65,4 +72,4 @@ autofluo = create_array(
     **COMMON,
 )
 
-save_arrays([gfp, autofluo])
+save_arrays([gfp, autofluo], projects=[project], subjects=[subject])

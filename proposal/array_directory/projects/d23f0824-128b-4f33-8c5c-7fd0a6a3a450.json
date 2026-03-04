@@ -1,0 +1,9 @@
+{
+  "project_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450",
+  "name": "VISp viral tracing",
+  "description": "Anterograde tracing from primary visual cortex using AAV-GFP in adult mice",
+  "digital_identifier": "https://doi.org/10.1234/visp-tracing",
+  "contributors": [
+    "Smith Lab, Sainsbury Wellcome Centre"
+  ]
+}
