@@ -3,7 +3,7 @@
   "description": "Average c-Fos expression map from 12 adult mice after novel environment exposure",
   "version": "1.0",
   "license": "CC-BY-4.0",
-  "citation": "Lee et al 2026, https://doi.org/10.9999/cfos-avg",
+  "digital_identifier": "https://doi.org/10.9999/cfos-avg",
   "contributors": [
     "Lee Lab, Francis Crick Institute"
   ],
@@ -29,10 +29,12 @@
     25.0
   ],
   "coordinate_space": "allen_mouse",
+  "age": 90,
+  "age_units": "days",
+  "project_name": "Whole-brain c-Fos activity mapping",
+  "project_description": "Population average c-Fos expression after novel environment exposure in adult mice",
   "sample_number": 12,
   "number_of_female": 6,
   "number_of_male": 6,
-  "number_of_hermaphrodite": 0,
-  "age": 90,
-  "age_units": "days"
+  "number_of_hermaphrodite": 0
 }

@@ -44,6 +44,11 @@ def create_dataset(
     voxel_size_um,
     coordinate_space,
     subject_id=None,
+    strain=None,
+    age=None,
+    age_units=None,
+    project_name=None,
+    project_description=None,
     injection_target=None,
     injection_coordinate=None,
     **extra_fields,
@@ -86,6 +91,16 @@ def create_dataset(
     }
     if subject_id is not None:
         metadata["subject_id"] = subject_id
+    if strain is not None:
+        metadata["strain"] = strain
+    if age is not None:
+        metadata["age"] = age
+    if age_units is not None:
+        metadata["age_units"] = age_units
+    if project_name is not None:
+        metadata["project_name"] = project_name
+    if project_description is not None:
+        metadata["project_description"] = project_description
     if injection_target is not None:
         metadata["injection_target"] = injection_target
     if injection_coordinate is not None:
@@ -98,15 +113,23 @@ def create_dataset(
 
     if subject_id is not None:
         # single-animal dataset
-        subject_state = omcore.SubjectState(
-            age_category=_resolve_age_category(developmental_stage),
-            internal_identifier=subject_id,
-        )
-        subject = omcore.Subject(
-            internal_identifier=subject_id,
-            species=_resolve_species(species),
-            studied_states=[subject_state],
-        )
+        state_kwargs = {
+            "age_category": _resolve_age_category(developmental_stage),
+            "internal_identifier": subject_id,
+        }
+        if age is not None:
+            state_kwargs["age"] = omcore.QuantitativeValue(
+                value=age,
+                unit=_resolve_unit(age_units) if age_units else None,
+            )
+        subject_state = omcore.SubjectState(**state_kwargs)
+
+        subject_kwargs = {
+            "internal_identifier": subject_id,
+            "species": _resolve_species(species),
+            "studied_states": [subject_state],
+        }
+        subject = omcore.Subject(**subject_kwargs)
         nodes.extend([subject_state, subject])
         specimens = [subject]
     else:
@@ -215,6 +238,16 @@ def _resolve_orientation(code):
         "asr": omterms.AnatomicalAxesOrientation.asr,
     }
     return lookup.get(code)
+
+
+def _resolve_unit(unit):
+    lookup = {
+        "days": omterms.UnitOfMeasurement.day,
+        "weeks": omterms.UnitOfMeasurement.week,
+        "months": omterms.UnitOfMeasurement.month,
+        "years": omterms.UnitOfMeasurement.year,
+    }
+    return lookup.get(unit, omterms.UnitOfMeasurement(name=unit))
 
 
 def _resolve_techniques(techniques):

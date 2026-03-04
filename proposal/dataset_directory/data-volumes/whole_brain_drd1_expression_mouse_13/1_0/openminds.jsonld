@@ -6,10 +6,22 @@
     {
       "@id": "_:000000",
       "@type": "https://openminds.ebrains.eu/core/SubjectState",
+      "age": {
+        "@type": "https://openminds.ebrains.eu/core/QuantitativeValue",
+        "unit": {
+          "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/day"
+        },
+        "value": 120
+      },
       "ageCategory": {
         "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult"
       },
-      "internalIdentifier": "e8d79f49-af6d-414c-8a6f-188a424e617b"
+      "internalIdentifier": "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d"
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/day",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/UnitOfMeasurement",
+      "name": "day"
     },
     {
       "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult",
@@ -25,9 +37,9 @@
       ]
     },
     {
-      "@id": "_:000002",
+      "@id": "_:000003",
       "@type": "https://openminds.ebrains.eu/core/Subject",
-      "internalIdentifier": "e8d79f49-af6d-414c-8a6f-188a424e617b",
+      "internalIdentifier": "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d",
       "species": {
         "@id": "https://openminds.ebrains.eu/instances/species/musMusculus"
       },
@@ -51,7 +63,7 @@
       ]
     },
     {
-      "@id": "_:000004",
+      "@id": "_:000005",
       "@type": "https://openminds.ebrains.eu/sands/CustomCoordinateSpace",
       "anatomicalAxesOrientation": {
         "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR"
@@ -73,28 +85,28 @@
       "name": "micrometer"
     },
     {
-      "@id": "_:000007",
+      "@id": "_:000008",
       "@type": "https://openminds.ebrains.eu/core/FileRepository",
       "IRI": "file://data-volumes/whole_brain_drd1_expression_mouse_13/1_0/volume.ome.zarr",
       "name": "DRD1 volume"
     },
     {
-      "@id": "_:000008",
+      "@id": "_:000009",
       "@type": "https://openminds.ebrains.eu/core/DatasetVersion",
       "description": "Light sheet fluorescence microscopy of DRD1 immunostaining across the whole brain",
       "fullName": "Whole-brain DRD1 expression - Mouse 13",
       "repository": {
-        "@id": "_:000007"
+        "@id": "_:000008"
       },
       "shortName": "DRD1",
       "studiedSpecimen": [
         {
-          "@id": "_:000002"
+          "@id": "_:000003"
         }
       ],
       "technique": [
         {
-          "@id": "_:000009"
+          "@id": "_:000010"
         },
         {
           "@id": "https://openminds.ebrains.eu/instances/technique/lightSheetFluorescenceMicroscopy"
@@ -104,7 +116,7 @@
       "versionInnovation": "DRD1: fluorescence intensity"
     },
     {
-      "@id": "_:000009",
+      "@id": "_:000010",
       "@type": "https://openminds.ebrains.eu/controlledTerms/Technique",
       "name": "immunostaining"
     },

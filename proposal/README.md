@@ -71,9 +71,20 @@ Each channel of a multi-channel volume is stored as a **separate dataset** with 
 
 This keeps each dataset simple (one volume = one measured quantity) and avoids the complexity of per-channel metadata arrays.
 
-## Additional Metadata Fields for Channel Linking
+## Project Metadata
 
-* `subject_id` - UUID identifying the animal (subject) the data came from. All datasets derived from the same animal share this ID, allowing multi-channel or multi-modal data to be linked.
 * `project_id` - UUID identifying the project this dataset belongs to. Datasets produced as part of the same set (e.g. a study or publication) share this ID.
+* `project_name` - Human-readable project name (e.g. `"VISp viral tracing"`).
+* `project_description` - Brief description of the project's aims.
+
+## Subject (Animal) Metadata
+
+* `subject_id` - UUID identifying the animal (subject) the data came from. All datasets derived from the same animal share this ID, allowing multi-channel or multi-modal data to be linked. An individual animal is treated as a population average where n=1.
+* `strain` - Mouse strain or line (e.g. `"C57BL/6J"`, `"Drd1a-Cre"`).
+* `age` - Age at time of imaging (or average age for population averages).
+* `age_units` - Units for interpreting the `age` field (e.g. `"days"`, `"weeks"`).
+
+## Channel Metadata
+
 * `channel_name` - Human-readable name for this channel (e.g. `"GFP"`, `"tdTomato"`, `"autofluorescence"`).
 

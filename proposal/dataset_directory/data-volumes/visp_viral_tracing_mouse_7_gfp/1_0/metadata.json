@@ -3,7 +3,7 @@
   "description": "AAV-GFP anterograde tracing from primary visual cortex (GFP channel)",
   "version": "1.0",
   "license": "CC-BY-4.0",
-  "citation": "Smith et al 2025, https://doi.org/10.1234/visp-tracing",
+  "digital_identifier": "https://doi.org/10.1234/visp-tracing",
   "contributors": [
     "Smith Lab, Sainsbury Wellcome Centre"
   ],
@@ -30,6 +30,11 @@
   ],
   "coordinate_space": "allen_mouse",
   "subject_id": "6513270e-269e-4d37-b2a7-4de452e6b438",
+  "strain": "C57BL/6J",
+  "age": 90,
+  "age_units": "days",
+  "project_name": "VISp viral tracing",
+  "project_description": "Anterograde tracing from primary visual cortex using AAV-GFP in adult mice",
   "injection_target": {
     "regions": [
       "VISp"
@@ -43,5 +48,8 @@
     5700,
     2800,
     3600
-  ]
+  ],
+  "number_of_male": 1,
+  "number_of_female": 0,
+  "number_of_hermaphrodite": 0
 }

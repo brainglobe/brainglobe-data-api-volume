@@ -7,14 +7,26 @@ from ingestion_helpers import create_dataset, save_datasets
 
 rng = random.Random(13)
 
+PROJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
+SUBJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
+
 drd1 = create_dataset(
     name="Whole-brain DRD1 expression - Mouse 13",
     description="Light sheet fluorescence microscopy of DRD1 "
     "immunostaining across the whole brain",
-    digital_identifier="Jones et al 2026, https://doi.org/10.5678/drd1-lsfm",
+    digital_identifier="https://doi.org/10.5678/drd1-lsfm",
     contributors=["Jones Lab, UCL"],
-    subject_id=str(uuid.UUID(int=rng.getrandbits(128), version=4)),
-    project_id=str(uuid.UUID(int=rng.getrandbits(128), version=4)),
+    project_id=PROJECT_ID,
+    project_name="Whole-brain DRD1 expression",
+    project_description="Mapping DRD1 expression across the whole brain "
+    "using immunostaining and light sheet microscopy",
+    subject_id=SUBJECT_ID,
+    strain="Drd1a-Cre",
+    number_of_female=1,
+    number_of_male=0,
+    number_of_hermaphrodite=0,
+    age=120,
+    age_units="days",
     channel_name="DRD1",
     measured_quantity="fluorescence intensity",
     studied_target="DRD1",

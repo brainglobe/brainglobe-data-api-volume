@@ -6,10 +6,22 @@
     {
       "@id": "_:000000",
       "@type": "https://openminds.ebrains.eu/core/SubjectState",
+      "age": {
+        "@type": "https://openminds.ebrains.eu/core/QuantitativeValue",
+        "unit": {
+          "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/day"
+        },
+        "value": 90
+      },
       "ageCategory": {
         "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult"
       },
       "internalIdentifier": "6513270e-269e-4d37-b2a7-4de452e6b438"
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/day",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/UnitOfMeasurement",
+      "name": "day"
     },
     {
       "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult",
@@ -25,7 +37,7 @@
       ]
     },
     {
-      "@id": "_:000002",
+      "@id": "_:000003",
       "@type": "https://openminds.ebrains.eu/core/Subject",
       "internalIdentifier": "6513270e-269e-4d37-b2a7-4de452e6b438",
       "species": {
@@ -51,7 +63,7 @@
       ]
     },
     {
-      "@id": "_:000004",
+      "@id": "_:000005",
       "@type": "https://openminds.ebrains.eu/sands/CustomCoordinateSpace",
       "anatomicalAxesOrientation": {
         "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR"
@@ -73,23 +85,23 @@
       "name": "micrometer"
     },
     {
-      "@id": "_:000007",
+      "@id": "_:000008",
       "@type": "https://openminds.ebrains.eu/core/FileRepository",
       "IRI": "file://data-volumes/visp_viral_tracing_mouse_7_gfp/1_0/volume.ome.zarr",
       "name": "GFP volume"
     },
     {
-      "@id": "_:000008",
+      "@id": "_:000009",
       "@type": "https://openminds.ebrains.eu/core/DatasetVersion",
       "description": "AAV-GFP anterograde tracing from primary visual cortex (GFP channel)",
       "fullName": "VISp viral tracing - Mouse 7 - GFP",
       "repository": {
-        "@id": "_:000007"
+        "@id": "_:000008"
       },
       "shortName": "GFP",
       "studiedSpecimen": [
         {
-          "@id": "_:000002"
+          "@id": "_:000003"
         }
       ],
       "technique": [

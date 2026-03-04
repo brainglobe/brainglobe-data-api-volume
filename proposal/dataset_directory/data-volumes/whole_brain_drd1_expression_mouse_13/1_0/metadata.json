@@ -3,11 +3,11 @@
   "description": "Light sheet fluorescence microscopy of DRD1 immunostaining across the whole brain",
   "version": "1.0",
   "license": "CC-BY-4.0",
-  "citation": "Jones et al 2026, https://doi.org/10.5678/drd1-lsfm",
+  "digital_identifier": "https://doi.org/10.5678/drd1-lsfm",
   "contributors": [
     "Jones Lab, UCL"
   ],
-  "project_id": "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d",
+  "project_id": "e8d79f49-af6d-414c-8a6f-188a424e617b",
   "channel_name": "DRD1",
   "measured_quantity": "fluorescence intensity",
   "studied_target": "DRD1",
@@ -29,5 +29,13 @@
     25.0
   ],
   "coordinate_space": "allen_mouse",
-  "subject_id": "e8d79f49-af6d-414c-8a6f-188a424e617b"
+  "subject_id": "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d",
+  "strain": "Drd1a-Cre",
+  "age": 120,
+  "age_units": "days",
+  "project_name": "Whole-brain DRD1 expression",
+  "project_description": "Mapping DRD1 expression across the whole brain using immunostaining and light sheet microscopy",
+  "number_of_female": 1,
+  "number_of_male": 0,
+  "number_of_hermaphrodite": 0
 }

@@ -7,13 +7,18 @@ from ingestion_helpers import create_dataset, save_datasets
 
 rng = random.Random(42)
 
+PROJECT_ID = str(uuid.UUID(int=rng.getrandbits(128), version=4))
+
 cfos = create_dataset(
     name="Whole-brain c-Fos population average",
     description="Average c-Fos expression map from 12 adult mice "
     "after novel environment exposure",
     digital_identifier="https://doi.org/10.9999/cfos-avg",
     contributors=["Lee Lab, Francis Crick Institute"],
-    project_id=str(uuid.UUID(int=rng.getrandbits(128), version=4)),
+    project_id=PROJECT_ID,
+    project_name="Whole-brain c-Fos activity mapping",
+    project_description="Population average c-Fos expression after "
+    "novel environment exposure in adult mice",
     channel_name="c-Fos",
     measured_quantity="cell density",
     studied_target="c-Fos",
