@@ -49,6 +49,7 @@ These are not from openMINDS (or I couldnt find them):
 * `technique` - Method of accomplishing a desired aim. 194 valid values from openMINDS.
 * `measured_quantity` - What the voxel values represent (e.g. fluorescence intensity, cell density). Since each channel is its own array, this is always a single quantity.
 * `studied_target` - What were we trying to measure (e.g. DRD1, C-Fos, Nissl )
+* `studied_gene_ensembl_id` - Ensembl gene ID for the studied target, if applicable (e.g. `"ENSMUSG00000021478"` for DRD1).
 * `digital_identifier` - DOI for the associated publication (e.g. `"10.1234/example"`).
 * `anatomical_axes_orientation` - BrainGlobe orientation code (e.g. `"asr"`).
 * `voxel_size_um` - Voxel size in micrometers.

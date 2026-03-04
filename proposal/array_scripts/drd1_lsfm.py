@@ -30,6 +30,7 @@ drd1 = create_array(
     channel_name="DRD1",
     measured_quantity="fluorescence intensity",
     studied_target="DRD1",
+    studied_gene_ensembl_id="ENSMUSG00000021478",
     species="Mus musculus",
     developmental_stage="adult",
     technique=[

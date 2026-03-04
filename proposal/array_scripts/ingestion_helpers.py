@@ -49,6 +49,7 @@ def create_array(
     age_units=None,
     project_name=None,
     project_description=None,
+    studied_gene_ensembl_id=None,
     injection_target=None,
     injection_coordinate=None,
     **extra_fields,
@@ -101,6 +102,8 @@ def create_array(
         metadata["project_name"] = project_name
     if project_description is not None:
         metadata["project_description"] = project_description
+    if studied_gene_ensembl_id is not None:
+        metadata["studied_gene_ensembl_id"] = studied_gene_ensembl_id
     if injection_target is not None:
         metadata["injection_target"] = injection_target
     if injection_coordinate is not None:

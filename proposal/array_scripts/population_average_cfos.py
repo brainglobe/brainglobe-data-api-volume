@@ -22,6 +22,7 @@ cfos = create_array(
     channel_name="c-Fos",
     measured_quantity="cell density",
     studied_target="c-Fos",
+    studied_gene_ensembl_id="ENSMUSG00000021250",
     species="Mus musculus",
     developmental_stage="adult",
     technique=[

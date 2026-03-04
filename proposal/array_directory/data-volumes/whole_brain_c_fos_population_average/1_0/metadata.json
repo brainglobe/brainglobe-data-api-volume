@@ -33,6 +33,7 @@
   "age_units": "days",
   "project_name": "Whole-brain c-Fos activity mapping",
   "project_description": "Population average c-Fos expression after novel environment exposure in adult mice",
+  "studied_gene_ensembl_id": "ENSMUSG00000021250",
   "sample_number": 12,
   "number_of_female": 6,
   "number_of_male": 6,
