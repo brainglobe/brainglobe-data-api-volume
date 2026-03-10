@@ -77,6 +77,7 @@ defined once and referenced by ID from each **array**.
 #### Array (optional fields)
 * `subject_id` - Reference to the subject (present for individual animals).
 * `studied_gene` - Dictionary with gene metadata for the studied target: `{gene_name, gene_description, synonyms, ensembl_id}`.
+* `studied_cell_type` - Dictionary compatible with openMINDS `CellType`: `{name, ontology_identifier, description, definition}`. `name` is required; the other fields are optional.
 * `injection_target` - Injection target regions, nested with the annotation set they belong to: `{regions, annotation_set: {name, version}}`. The `name` is a BrainGlobe atlas name (e.g. `"allen_mouse"`).
 * `injection_coordinate` - Specific coordinate in the related coordinate space (e.g. `[5700, 2800, 3600]`).
 

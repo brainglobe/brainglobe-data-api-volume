@@ -111,6 +111,7 @@ def create_array(
     version="1.0",
     license="CC-BY-4.0",
     studied_gene=None,
+    studied_cell_type=None,
     injection_target=None,
     injection_coordinate=None,
     **extra_fields,
@@ -158,6 +159,8 @@ def create_array(
         metadata.update(subject)
     if studied_gene is not None:
         metadata["studied_gene"] = _validate_studied_gene(studied_gene)
+    if studied_cell_type is not None:
+        metadata["studied_cell_type"] = _validate_studied_cell_type(studied_cell_type)
     if injection_target is not None:
         metadata["injection_target"] = injection_target
     if injection_coordinate is not None:
@@ -333,6 +336,35 @@ def _validate_studied_gene(studied_gene):
         "synonyms": studied_gene["synonyms"],
         "ensembl_id": studied_gene["ensembl_id"],
     }
+
+
+def _validate_studied_cell_type(studied_cell_type):
+    if not isinstance(studied_cell_type, dict):
+        raise TypeError("studied_cell_type must be a dict")
+
+    if "name" not in studied_cell_type:
+        raise ValueError("studied_cell_type is missing required key: name")
+    if not isinstance(studied_cell_type["name"], str):
+        raise TypeError("studied_cell_type['name'] must be a string")
+
+    optional_keys = {"ontology_identifier", "description", "definition"}
+    allowed_keys = {"name", *optional_keys}
+    unknown_keys = set(studied_cell_type.keys()) - allowed_keys
+    if unknown_keys:
+        unknown_list = ", ".join(sorted(unknown_keys))
+        raise ValueError(
+            "studied_cell_type contains unsupported keys: "
+            f"{unknown_list}"
+        )
+
+    normalized = {"name": studied_cell_type["name"]}
+    for key in optional_keys:
+        if key in studied_cell_type:
+            if not isinstance(studied_cell_type[key], str):
+                raise TypeError(f"studied_cell_type['{key}'] must be a string")
+            normalized[key] = studied_cell_type[key]
+
+    return normalized
 
 
 def _resolve_species(name):

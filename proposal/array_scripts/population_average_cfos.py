@@ -43,6 +43,11 @@ cfos = create_array(
         "synonyms": ["c-Fos", "AP-1"],
         "ensembl_id": "ENSMUSG00000021250",
     },
+    studied_cell_type={
+        "name": "neuron",
+        "ontology_identifier": "CL:0000540",
+        "description": "Electrically excitable cell specialized for synaptic communication.",
+    },
     technique=[
         "immunostaining",
         "light sheet fluorescence microscopy",
