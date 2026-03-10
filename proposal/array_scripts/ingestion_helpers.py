@@ -110,7 +110,7 @@ def create_array(
     coordinate_space,
     version="1.0",
     license="CC-BY-4.0",
-    studied_gene_ensembl_id=None,
+    studied_gene=None,
     injection_target=None,
     injection_coordinate=None,
     **extra_fields,
@@ -156,8 +156,8 @@ def create_array(
     else:
         # population average — embed subject fields in array metadata
         metadata.update(subject)
-    if studied_gene_ensembl_id is not None:
-        metadata["studied_gene_ensembl_id"] = studied_gene_ensembl_id
+    if studied_gene is not None:
+        metadata["studied_gene"] = _validate_studied_gene(studied_gene)
     if injection_target is not None:
         metadata["injection_target"] = injection_target
     if injection_coordinate is not None:
@@ -299,6 +299,40 @@ def _make_folder_name(name, channel_name):
         .split()
     )
     return "_".join(parts)
+
+
+def _validate_studied_gene(studied_gene):
+    required_keys = {
+        "gene_name",
+        "gene_description",
+        "synonyms",
+        "ensembl_id",
+    }
+    if not isinstance(studied_gene, dict):
+        raise TypeError("studied_gene must be a dict")
+
+    missing = required_keys - set(studied_gene.keys())
+    if missing:
+        missing_list = ", ".join(sorted(missing))
+        raise ValueError(f"studied_gene is missing required keys: {missing_list}")
+
+    if not isinstance(studied_gene["gene_name"], str):
+        raise TypeError("studied_gene['gene_name'] must be a string")
+    if not isinstance(studied_gene["gene_description"], str):
+        raise TypeError("studied_gene['gene_description'] must be a string")
+    if not isinstance(studied_gene["synonyms"], list) or not all(
+        isinstance(s, str) for s in studied_gene["synonyms"]
+    ):
+        raise TypeError("studied_gene['synonyms'] must be a list of strings")
+    if not isinstance(studied_gene["ensembl_id"], str):
+        raise TypeError("studied_gene['ensembl_id'] must be a string")
+
+    return {
+        "gene_name": studied_gene["gene_name"],
+        "gene_description": studied_gene["gene_description"],
+        "synonyms": studied_gene["synonyms"],
+        "ensembl_id": studied_gene["ensembl_id"],
+    }
 
 
 def _resolve_species(name):

@@ -40,7 +40,12 @@ drd1 = create_array(
     channel_name="DRD1",
     measured_quantity="fluorescence intensity",
     studied_target="DRD1",
-    studied_gene_ensembl_id="ENSMUSG00000021478",
+    studied_gene={
+        "gene_name": "Drd1",
+        "gene_description": "Dopamine receptor D1",
+        "synonyms": ["D1", "D1R"],
+        "ensembl_id": "ENSMUSG00000021478",
+    },
     technique=[
         "immunostaining",
         "light sheet fluorescence microscopy",

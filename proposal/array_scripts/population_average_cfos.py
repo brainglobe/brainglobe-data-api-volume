@@ -37,7 +37,12 @@ cfos = create_array(
     channel_name="c-Fos",
     measured_quantity="cell density",
     studied_target="c-Fos",
-    studied_gene_ensembl_id="ENSMUSG00000021250",
+    studied_gene={
+        "gene_name": "Fos",
+        "gene_description": "FBJ osteosarcoma oncogene",
+        "synonyms": ["c-Fos", "AP-1"],
+        "ensembl_id": "ENSMUSG00000021250",
+    },
     technique=[
         "immunostaining",
         "light sheet fluorescence microscopy",
