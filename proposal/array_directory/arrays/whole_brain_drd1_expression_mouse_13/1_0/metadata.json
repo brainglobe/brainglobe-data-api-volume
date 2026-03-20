@@ -1,0 +1,37 @@
+{
+  "id": "9eac61de-de2e-5557-bd4d-394e528cb8ba",
+  "name": "Whole-brain DRD1 expression - Mouse 13",
+  "description": "Light sheet fluorescence microscopy of DRD1 immunostaining across the whole brain",
+  "version": "1.0",
+  "license": "CC-BY-4.0",
+  "project_id": "e8d79f49-af6d-414c-8a6f-188a424e617b",
+  "channel_name": "DRD1",
+  "measured_quantity": "fluorescence intensity",
+  "studied_target": "DRD1",
+  "technique": [
+    "immunostaining",
+    "light sheet fluorescence microscopy"
+  ],
+  "orientation": "asr",
+  "shape": [
+    528,
+    320,
+    456
+  ],
+  "voxel_size_um": [
+    25.0,
+    25.0,
+    25.0
+  ],
+  "coordinate_space": "allen_mouse",
+  "subject_id": "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d",
+  "studied_gene": {
+    "gene_name": "Drd1",
+    "gene_description": "Dopamine receptor D1",
+    "synonyms": [
+      "D1",
+      "D1R"
+    ],
+    "ensembl_id": "ENSMUSG00000021478"
+  }
+}

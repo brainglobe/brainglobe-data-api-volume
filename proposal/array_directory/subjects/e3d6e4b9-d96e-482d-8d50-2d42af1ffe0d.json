@@ -1,0 +1,12 @@
+{
+  "species": "Mus musculus",
+  "developmental_stage": "adult",
+  "sample_number": 1,
+  "number_of_male": 0,
+  "number_of_female": 1,
+  "number_of_hermaphrodite": 0,
+  "subject_id": "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d",
+  "strain": "Drd1a-Cre",
+  "age": 120,
+  "age_units": "days"
+}

@@ -1,0 +1,9 @@
+{
+  "project_id": "bdd640fb-0667-4ad1-9c80-317fa3b1799d",
+  "name": "Whole-brain c-Fos activity mapping",
+  "description": "Population average c-Fos expression after novel environment exposure in adult mice",
+  "digital_identifier": "https://doi.org/10.9999/cfos-avg",
+  "contributors": [
+    "Lee Lab, Francis Crick Institute"
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "@context": {
+    "@vocab": "https://openminds.ebrains.eu/vocab/"
+  },
+  "@graph": [
+    {
+      "@id": "_:000000",
+      "@type": "https://openminds.ebrains.eu/core/SubjectGroup",
+      "internalIdentifier": "whole_brain_c_fos_population_average",
+      "numberOfSubjects": 12,
+      "species": [
+        {
+          "@id": "https://openminds.ebrains.eu/instances/species/musMusculus"
+        }
+      ]
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/species/musMusculus",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/Species",
+      "definition": "The species *Mus musculus* (house mouse) belongs to the family of *muridae* (murids).",
+      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0107134",
+      "knowledgeSpaceLink": "https://knowledge-space.org/wiki/NCBITaxon:10090#mouse",
+      "name": "Mus musculus",
+      "preferredOntologyIdentifier": "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+      "synonym": [
+        "house mouse",
+        "mouse"
+      ]
+    },
+    {
+      "@id": "_:000002",
+      "@type": "https://openminds.ebrains.eu/sands/CustomCoordinateSpace",
+      "anatomicalAxesOrientation": {
+        "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR"
+      },
+      "name": "allen_mouse",
+      "nativeUnit": {
+        "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/micrometer"
+      }
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/AnatomicalAxesOrientation",
+      "definition": "X, Y, Z axes are oriented towards anterior, superior and right, respectively.",
+      "name": "ASR"
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/micrometer",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/UnitOfMeasurement",
+      "name": "micrometer"
+    },
+    {
+      "@id": "_:000005",
+      "@type": "https://openminds.ebrains.eu/core/FileRepository",
+      "IRI": "file://data-volumes/whole_brain_c_fos_population_average/1_0/volume.ome.zarr",
+      "name": "c-Fos volume"
+    },
+    {
+      "@id": "_:000006",
+      "@type": "https://openminds.ebrains.eu/core/DatasetVersion",
+      "description": "Average c-Fos expression map from 12 adult mice after novel environment exposure",
+      "fullName": "Whole-brain c-Fos population average",
+      "repository": {
+        "@id": "_:000005"
+      },
+      "shortName": "c-Fos",
+      "studiedSpecimen": [
+        {
+          "@id": "_:000000"
+        }
+      ],
+      "technique": [
+        {
+          "@id": "_:000007"
+        },
+        {
+          "@id": "https://openminds.ebrains.eu/instances/technique/lightSheetFluorescenceMicroscopy"
+        }
+      ],
+      "versionIdentifier": "1.0",
+      "versionInnovation": "c-Fos: cell density"
+    },
+    {
+      "@id": "_:000007",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/Technique",
+      "name": "immunostaining"
+    },
+    {
+      "@id": "https://openminds.ebrains.eu/instances/technique/lightSheetFluorescenceMicroscopy",
+      "@type": "https://openminds.ebrains.eu/controlledTerms/Technique",
+      "definition": "Lightsheet fluorescence microscopy is a fluorescence microscopy technique that uses a thin sheet of light to excite only fluorophores within the plane of illumination.",
+      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0739693",
+      "name": "light sheet fluorescence microscopy",
+      "preferredOntologyIdentifier": "http://uri.interlex.org/tgbugs/uris/readable/technique/lightSheetMicroscopyFluorescent",
+      "synonym": [
+        "light sheet microscopy",
+        "LSFM",
+        "selective plane illumination microscopy",
+        "SPIM"
+      ]
+    }
+  ]
+}
