@@ -52,7 +52,7 @@ defined once and referenced by ID from each **array**.
   
 #### Subject (optional fields)
 * `subject_id` - a list defining the UUID identifying an individual animal. Present for single-animal arrays, absent for population averages. All arrays derived from the same animal share this ID, allowing multi-channel data to be linked.
-* `strain` - Mouse strain or line (e.g. `"C57BL/6J"`, `"Drd1a-Cre"`).
+* `strain` - a list defining the mouse strain or line for each animal (e.g. `["C57BL/6J"]`, `["Drd1a-Cre"]`).
 * `age` - a list defining age at time of imaging for each animal (or average age for population averages).
 * `age_units` - a list defining units for interpreting the `age` field (e.g. `"days"`, `"weeks"`).
 

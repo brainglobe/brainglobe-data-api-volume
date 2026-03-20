@@ -24,6 +24,9 @@ intensity_map = array.values  # shape: (132, 80, 114)
 print(array.metadata.species)  # "Mus musculus"
 print(array.metadata.voxel_size_um)  # [100.0, 100.0, 100.0]
 print(array.metadata.coordinate_space) # The coordinate space the array is registered to
+print(array.metadata.biological_sex)  # ["male"]
+print(array.metadata.age)  # [90]
+print(array.metadata.age_units)  # ["days"]
 project_id = array.metadata.project_id
-arrays_from_project = query_arrays(project = project_id)
+arrays_from_project = query_arrays(project=project_id)
 print(arrays_from_project)

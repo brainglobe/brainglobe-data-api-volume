@@ -57,9 +57,7 @@ def create_subject(
     species,
     developmental_stage,
     sample_number=1,
-    number_of_male=0,
-    number_of_female=0,
-    number_of_hermaphrodite=0,
+    biological_sex=None,
     subject_id=None,
     strain=None,
     age=None,
@@ -71,6 +69,9 @@ def create_subject(
     For population averages omit ``subject_id`` and set
     ``sample_number`` to the cohort size.
 
+    List fields (``biological_sex``, ``subject_id``, ``strain``,
+    ``age``, ``age_units``) accept one entry per animal.
+
     Returns a plain dict that can be passed to :func:`create_array`.
     Subjects with a ``subject_id`` are saved to
     ``subjects/<subject_id>.json`` by :func:`save_arrays`.
@@ -79,10 +80,9 @@ def create_subject(
         "species": species,
         "developmental_stage": developmental_stage,
         "sample_number": sample_number,
-        "number_of_male": number_of_male,
-        "number_of_female": number_of_female,
-        "number_of_hermaphrodite": number_of_hermaphrodite,
     }
+    if biological_sex is not None:
+        meta["biological_sex"] = biological_sex
     if subject_id is not None:
         meta["subject_id"] = subject_id
     if strain is not None:
@@ -173,21 +173,22 @@ def create_array(
     nodes = []
 
     if subject.get("subject_id") is not None:
-        # single-animal array
+        # single-animal array — list fields have one entry each
+        sid = subject["subject_id"][0]
         state_kwargs = {
             "age_category": _resolve_age_category(developmental_stage),
-            "internal_identifier": subject["subject_id"],
+            "internal_identifier": sid,
         }
         if subject.get("age") is not None:
             state_kwargs["age"] = omcore.QuantitativeValue(
-                value=subject["age"],
-                unit=_resolve_unit(subject["age_units"])
+                value=subject["age"][0],
+                unit=_resolve_unit(subject["age_units"][0])
                 if subject.get("age_units")
                 else None,
             )
         subject_state = omcore.SubjectState(**state_kwargs)
         om_subject = omcore.Subject(
-            internal_identifier=subject["subject_id"],
+            internal_identifier=sid,
             species=_resolve_species(species),
             studied_states=[subject_state],
         )
@@ -260,7 +261,9 @@ def save_arrays(arrays, projects, subjects=None, output_dir=None):
         for subj in subjects:
             if subj.get("subject_id") is None:
                 continue
-            path = subjects_dir / f"{subj['subject_id']}.json"
+            # subject_id is a list; for individual subjects use the first ID
+            sid = subj["subject_id"][0]
+            path = subjects_dir / f"{sid}.json"
             with open(path, "w") as f:
                 json.dump(subj, f, indent=2)
                 f.write("\n")
