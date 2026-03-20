@@ -48,7 +48,7 @@ defined once and referenced by ID from each **array**.
 * `species` - Species name (e.g. `"Mus musculus"`). Should correspond to a BrainGlobe atlas species.
 * `developmental_stage` - Life cycle class: adolescent, adult, embryo, infant, juvenile, etc.
 * `sample_number` - Number of animals (1 for an individual, >1 for a population average).
-* `biological_sex` - A list of the biological sexes of the animals which comprise the dataset (accepted values are male, female, and hemaphrodite)
+* `biological_sex` - A list of the biological sexes of the animals which comprise the dataset (accepted values are male, female, hermaphrodite, and unknown)
   
 #### Subject (optional fields)
 * `subject_id` - a list defining the UUID identifying an individual animal. Present for single-animal arrays, absent for population averages. All arrays derived from the same animal share this ID, allowing multi-channel data to be linked.
