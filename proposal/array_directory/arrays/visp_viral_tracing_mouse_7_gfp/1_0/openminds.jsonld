@@ -1,47 +1,29 @@
 {
   "@context": {
-    "@vocab": "https://openminds.ebrains.eu/vocab/"
+    "@vocab": "https://openminds.om-i.org/props/"
   },
   "@graph": [
     {
       "@id": "_:000000",
-      "@type": "https://openminds.ebrains.eu/core/SubjectState",
+      "@type": "https://openminds.om-i.org/types/SubjectState",
       "age": {
-        "@type": "https://openminds.ebrains.eu/core/QuantitativeValue",
+        "@type": "https://openminds.om-i.org/types/QuantitativeValue",
         "unit": {
-          "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/day"
+          "@id": "https://openminds.om-i.org/instances/unitOfMeasurement/day"
         },
         "value": 90
       },
       "ageCategory": {
-        "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult"
+        "@id": "https://openminds.om-i.org/instances/ageCategory/adult"
       },
       "internalIdentifier": "6513270e-269e-4d37-b2a7-4de452e6b438"
     },
     {
-      "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/day",
-      "@type": "https://openminds.ebrains.eu/controlledTerms/UnitOfMeasurement",
-      "name": "day"
-    },
-    {
-      "@id": "https://openminds.ebrains.eu/instances/ageCategory/adult",
-      "@type": "https://openminds.ebrains.eu/controlledTerms/AgeCategory",
-      "definition": "'Adult' categorizes the life cycle stage of an animal or human that reached sexual maturity.",
-      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0729043",
-      "name": "adult",
-      "preferredOntologyIdentifier": "http://purl.obolibrary.org/obo/UBERON_0000113",
-      "synonym": [
-        "adult stage",
-        "post-juvenile adult",
-        "post-juvenile adult stage"
-      ]
-    },
-    {
       "@id": "_:000003",
-      "@type": "https://openminds.ebrains.eu/core/Subject",
+      "@type": "https://openminds.om-i.org/types/Subject",
       "internalIdentifier": "6513270e-269e-4d37-b2a7-4de452e6b438",
       "species": {
-        "@id": "https://openminds.ebrains.eu/instances/species/musMusculus"
+        "@id": "https://openminds.om-i.org/instances/species/musMusculus"
       },
       "studiedState": [
         {
@@ -50,49 +32,25 @@
       ]
     },
     {
-      "@id": "https://openminds.ebrains.eu/instances/species/musMusculus",
-      "@type": "https://openminds.ebrains.eu/controlledTerms/Species",
-      "definition": "The species *Mus musculus* (house mouse) belongs to the family of *muridae* (murids).",
-      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0107134",
-      "knowledgeSpaceLink": "https://knowledge-space.org/wiki/NCBITaxon:10090#mouse",
-      "name": "Mus musculus",
-      "preferredOntologyIdentifier": "http://purl.obolibrary.org/obo/NCBITaxon_10090",
-      "synonym": [
-        "house mouse",
-        "mouse"
-      ]
-    },
-    {
       "@id": "_:000005",
-      "@type": "https://openminds.ebrains.eu/sands/CustomCoordinateSpace",
+      "@type": "https://openminds.om-i.org/types/CustomCoordinateFramework",
       "anatomicalAxesOrientation": {
-        "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR"
+        "@id": "https://openminds.om-i.org/instances/anatomicalAxesOrientation/ASR"
       },
       "name": "allen_mouse",
       "nativeUnit": {
-        "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/micrometer"
+        "@id": "https://openminds.om-i.org/instances/unitOfMeasurement/micrometer"
       }
     },
     {
-      "@id": "https://openminds.ebrains.eu/instances/anatomicalAxesOrientation/ASR",
-      "@type": "https://openminds.ebrains.eu/controlledTerms/AnatomicalAxesOrientation",
-      "definition": "X, Y, Z axes are oriented towards anterior, superior and right, respectively.",
-      "name": "ASR"
-    },
-    {
-      "@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/micrometer",
-      "@type": "https://openminds.ebrains.eu/controlledTerms/UnitOfMeasurement",
-      "name": "micrometer"
-    },
-    {
       "@id": "_:000008",
-      "@type": "https://openminds.ebrains.eu/core/FileRepository",
+      "@type": "https://openminds.om-i.org/types/FileRepository",
       "IRI": "file://arrays/visp_viral_tracing_mouse_7_gfp/1_0/volume.ome.zarr",
       "name": "GFP volume"
     },
     {
       "@id": "_:000009",
-      "@type": "https://openminds.ebrains.eu/core/DatasetVersion",
+      "@type": "https://openminds.om-i.org/types/DatasetVersion",
       "description": "AAV-GFP anterograde tracing from primary visual cortex (GFP channel)",
       "fullName": "VISp viral tracing - Mouse 7 - GFP",
       "repository": {
@@ -106,25 +64,57 @@
       ],
       "technique": [
         {
-          "@id": "https://openminds.ebrains.eu/instances/technique/anterogradeTracing"
+          "@id": "https://openminds.om-i.org/instances/technique/anterogradeTracing"
         },
         {
-          "@id": "https://openminds.ebrains.eu/instances/technique/lightSheetFluorescenceMicroscopy"
+          "@id": "https://openminds.om-i.org/instances/technique/lightSheetFluorescenceMicroscopy"
         }
       ],
       "versionIdentifier": "1.0",
       "versionInnovation": "GFP: fluorescence intensity"
     },
     {
-      "@id": "https://openminds.ebrains.eu/instances/technique/anterogradeTracing",
-      "@type": "https://openminds.ebrains.eu/controlledTerms/Technique",
+      "@id": "https://openminds.om-i.org/instances/ageCategory/adult",
+      "@type": "https://openminds.om-i.org/types/AgeCategory",
+      "definition": "'Adult' categorizes the life cycle stage of an animal or human that reached sexual maturity.",
+      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0729043",
+      "name": "adult",
+      "preferredOntologyIdentifier": "http://purl.obolibrary.org/obo/UBERON_0000113",
+      "synonym": [
+        "adult stage",
+        "post-juvenile adult",
+        "post-juvenile adult stage"
+      ]
+    },
+    {
+      "@id": "https://openminds.om-i.org/instances/anatomicalAxesOrientation/ASR",
+      "@type": "https://openminds.om-i.org/types/AnatomicalAxesOrientation",
+      "definition": "X, Y, Z axes are oriented towards anterior, superior and right, respectively.",
+      "name": "ASR"
+    },
+    {
+      "@id": "https://openminds.om-i.org/instances/species/musMusculus",
+      "@type": "https://openminds.om-i.org/types/Species",
+      "definition": "The species *Mus musculus* (house mouse) belongs to the family of *muridae* (murids).",
+      "interlexIdentifier": "http://uri.interlex.org/base/ilx_0107134",
+      "knowledgeSpaceLink": "https://knowledge-space.org/wiki/NCBITaxon:10090#mouse",
+      "name": "Mus musculus",
+      "preferredOntologyIdentifier": "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+      "synonym": [
+        "house mouse",
+        "mouse"
+      ]
+    },
+    {
+      "@id": "https://openminds.om-i.org/instances/technique/anterogradeTracing",
+      "@type": "https://openminds.om-i.org/types/Technique",
       "definition": "Anterograde tracing is a technique used to trace axonal projections from their source (the cell body or soma) to their point of termination (the synapse).",
       "description": "Anterograde tracers are taken up by neuronal cell bodies at the injection site and travel to the axon terminals. Anterograde tracing techniques allow for a detailed assessment of neuronal connections between a target population of neurons and their outputs throughout the nervous system.",
       "name": "anterograde tracing"
     },
     {
-      "@id": "https://openminds.ebrains.eu/instances/technique/lightSheetFluorescenceMicroscopy",
-      "@type": "https://openminds.ebrains.eu/controlledTerms/Technique",
+      "@id": "https://openminds.om-i.org/instances/technique/lightSheetFluorescenceMicroscopy",
+      "@type": "https://openminds.om-i.org/types/Technique",
       "definition": "Lightsheet fluorescence microscopy is a fluorescence microscopy technique that uses a thin sheet of light to excite only fluorophores within the plane of illumination.",
       "interlexIdentifier": "http://uri.interlex.org/base/ilx_0739693",
       "name": "light sheet fluorescence microscopy",
@@ -135,6 +125,16 @@
         "selective plane illumination microscopy",
         "SPIM"
       ]
+    },
+    {
+      "@id": "https://openminds.om-i.org/instances/unitOfMeasurement/day",
+      "@type": "https://openminds.om-i.org/types/UnitOfMeasurement",
+      "name": "day"
+    },
+    {
+      "@id": "https://openminds.om-i.org/instances/unitOfMeasurement/micrometer",
+      "@type": "https://openminds.om-i.org/types/UnitOfMeasurement",
+      "name": "micrometer"
     }
   ]
 }
