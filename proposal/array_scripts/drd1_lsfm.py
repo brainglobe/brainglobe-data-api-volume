@@ -19,16 +19,14 @@ project = create_project(
 )
 
 subject = create_subject(
-    subject_id=SUBJECT_ID,
+    subject_id=[SUBJECT_ID],
     species="Mus musculus",
     developmental_stage="adult",
-    strain="Drd1a-Cre",
+    strain=["Drd1a-Cre"],
     sample_number=1,
-    number_of_female=1,
-    number_of_male=0,
-    number_of_hermaphrodite=0,
-    age=120,
-    age_units="days",
+    biological_sex=["female"],
+    age=[120],
+    age_units=["days"],
 )
 
 drd1 = create_array(

@@ -24,7 +24,9 @@
     25.0
   ],
   "coordinate_space": "allen_mouse",
-  "subject_id": "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d",
+  "subject_id": [
+    "e3d6e4b9-d96e-482d-8d50-2d42af1ffe0d"
+  ],
   "studied_gene": {
     "gene_name": "Drd1",
     "gene_description": "Dopamine receptor D1",

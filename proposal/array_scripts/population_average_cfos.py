@@ -21,11 +21,10 @@ subject = create_subject(
     species="Mus musculus",
     developmental_stage="adult",
     sample_number=12,
-    number_of_female=6,
-    number_of_male=6,
-    number_of_hermaphrodite=0,
-    age=90,
-    age_units="days",
+    biological_sex=["male"] * 6 + ["female"] * 6,
+    strain=["C57BL/6J"] * 12,
+    age=[90] * 12,
+    age_units=["days"] * 12,
 )
 
 cfos = create_array(

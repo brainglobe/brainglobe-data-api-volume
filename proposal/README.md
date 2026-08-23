@@ -48,15 +48,13 @@ defined once and referenced by ID from each **array**.
 * `species` - Species name (e.g. `"Mus musculus"`). Should correspond to a BrainGlobe atlas species.
 * `developmental_stage` - Life cycle class: adolescent, adult, embryo, infant, juvenile, etc.
 * `sample_number` - Number of animals (1 for an individual, >1 for a population average).
-* `number_of_male` - Number of male animals.
-* `number_of_female` - Number of female animals.
-* `number_of_hermaphrodite` - Number of hermaphrodite animals.
-
+* `biological_sex` - A list of the biological sexes of the animals which comprise the dataset (accepted values are male, female, hermaphrodite, and unknown)
+  
 #### Subject (optional fields)
-* `subject_id` - UUID identifying an individual animal. Present for single-animal arrays, absent for population averages. All arrays derived from the same animal share this ID, allowing multi-channel data to be linked.
-* `strain` - Mouse strain or line (e.g. `"C57BL/6J"`, `"Drd1a-Cre"`).
-* `age` - Age at time of imaging (or average age for population averages).
-* `age_units` - Units for interpreting the `age` field (e.g. `"days"`, `"weeks"`).
+* `subject_id` - a list defining the UUID identifying an individual animal. Present for single-animal arrays, absent for population averages. All arrays derived from the same animal share this ID, allowing multi-channel data to be linked.
+* `strain` - a list defining the mouse strain or line for each animal (e.g. `["C57BL/6J"]`, `["Drd1a-Cre"]`).
+* `age` - a list defining age at time of imaging for each animal (or average age for population averages).
+* `age_units` - a list defining units for interpreting the `age` field (e.g. `"days"`, `"weeks"`).
 
 ### Array (required fields)
 * `id` - UUID, unique array identifier (generated deterministically from the folder name and version).
@@ -92,11 +90,4 @@ Each channel of a multi-channel volume is stored as a **separate array** with it
 
 This keeps each array simple (one volume = one measured quantity) and avoids the complexity of per-channel metadata arrays.
 
-## Population Averages
 
-An individual animal is treated as a population average where n=1. This keeps the schema uniform:
-
-- Individual: `sample_number=1`, `number_of_male=1`, `number_of_female=0`, etc.
-- Population: `sample_number=12`, `number_of_male=6`, `number_of_female=6`, etc.
-
-Population averages have no `subject_id` (there is no single animal to reference). Their subject metadata is embedded directly in the array metadata.json rather than stored as a separate file.

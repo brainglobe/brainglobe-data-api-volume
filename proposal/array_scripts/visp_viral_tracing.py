@@ -19,16 +19,14 @@ project = create_project(
 )
 
 subject = create_subject(
-    subject_id=SUBJECT_ID,
+    subject_id=[SUBJECT_ID],
     species="Mus musculus",
     developmental_stage="adult",
-    strain="C57BL/6J",
+    strain=["C57BL/6J"],
     sample_number=1,
-    number_of_male=1,
-    number_of_female=0,
-    number_of_hermaphrodite=0,
-    age=90,
-    age_units="days",
+    biological_sex=["male"],
+    age=[90],
+    age_units=["days"],
 )
 
 COMMON = dict(

@@ -27,11 +27,62 @@
   "species": "Mus musculus",
   "developmental_stage": "adult",
   "sample_number": 12,
-  "number_of_male": 6,
-  "number_of_female": 6,
-  "number_of_hermaphrodite": 0,
-  "age": 90,
-  "age_units": "days",
+  "biological_sex": [
+    "male",
+    "male",
+    "male",
+    "male",
+    "male",
+    "male",
+    "female",
+    "female",
+    "female",
+    "female",
+    "female",
+    "female"
+  ],
+  "strain": [
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J",
+    "C57BL/6J"
+  ],
+  "age": [
+    90,
+    90,
+    90,
+    90,
+    90,
+    90,
+    90,
+    90,
+    90,
+    90,
+    90,
+    90
+  ],
+  "age_units": [
+    "days",
+    "days",
+    "days",
+    "days",
+    "days",
+    "days",
+    "days",
+    "days",
+    "days",
+    "days",
+    "days",
+    "days"
+  ],
   "studied_gene": {
     "gene_name": "Fos",
     "gene_description": "FBJ osteosarcoma oncogene",
@@ -43,7 +94,7 @@
   },
   "studied_cell_type": {
     "name": "neuron",
-    "ontology_identifier": "CL:0000540",
-    "description": "Electrically excitable cell specialized for synaptic communication."
+    "description": "Electrically excitable cell specialized for synaptic communication.",
+    "ontology_identifier": "CL:0000540"
   }
 }
