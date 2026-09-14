@@ -1,0 +1,182 @@
+{
+  "generated_at": "2026-09-14T15:02:50.868392+00:00",
+  "assembly": "GRCm39",
+  "ensembl_releases": [
+    116
+  ],
+  "experiment_count": 4752,
+  "sources": {
+    "metadata.csv": "https://raw.githubusercontent.com/Neural-Systems-at-UIO/spatial_brain_maps/refs/heads/gh-pages/metadata/metadata.csv",
+    "gene_data_counts.json.gz": "https://raw.githubusercontent.com/Neural-Systems-at-UIO/spatial_brain_maps/refs/heads/gh-pages/data/gene_data_counts.json.gz",
+    "MGI_Gene_Model_Coord.rpt": "https://www.informatics.jax.org/downloads/reports/MGI_Gene_Model_Coord.rpt",
+    "Mus_musculus.gene_info.gz": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Mus_musculus.gene_info.gz",
+    "gene_history.gz": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_history.gz",
+    "allen_experiments": "https://api.brain-map.org/api/v2/data/query.json",
+    "ensembl_lookup": "https://rest.ensembl.org/lookup/id",
+    "ensembl_release": "https://rest.ensembl.org/info/data"
+  },
+  "snapshots": {
+    "MGI_Gene_Model_Coord.rpt": {
+      "sha256": "717afa04ee965718f4612afb07ef8ad3c8443e3c8591abbe23359c6648b6ff3d",
+      "cached_at": "2026-09-14T14:50:21.402459+00:00"
+    },
+    "Mus_musculus.gene_info.gz": {
+      "sha256": "d10294b9b4112e64afca98f533316ac72bf95d0864b97a6e72b50f4b9ff81794",
+      "cached_at": "2026-09-14T14:52:32.698972+00:00"
+    },
+    "allen_0357062b7e3e6224.json": {
+      "sha256": "4c6d0d09aee3c0f275e994189cff4e7e70e70a23b89736945f185bb001e04b62",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_1d12f7a7aacad8b9.json": {
+      "sha256": "6db2b4d1c01eb8be7354b9fdcf981d676e76ad6cf9352342c6e015145583a17b",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_361c8f42b6f8ee9c.json": {
+      "sha256": "f04c427d93fd8f2fd6e0187c3ddfb44cc5eb7cb5e116f3ea23819d06a2ccaa23",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_38c64365740899a0.json": {
+      "sha256": "2f292449494e8fdfeb4278da3fd619e0dc2123b298e4bc28aa8da4363ddc930f",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_46f3da27301b6138.json": {
+      "sha256": "f184e9b5751dc2a8fa77ca1ea58f36c48dfe4d0be11c86854cb9434582dfcb7d",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_4f3bedf09f195bf7.json": {
+      "sha256": "15ecfb49b88ab264d0dabd138c7bee5fec6bc6cde3f8d083d697534600fc5ed6",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_560672e4ff719db9.json": {
+      "sha256": "9d3ef4d6776ce5b92a7546a67dedb0cda6a17ebb3daa6eba4ecdc158facce5cb",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_59cca69b0a721a06.json": {
+      "sha256": "719b53c3720d75f071a55f4393c08cb830a1d26040d82065f5642354d6593954",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_693e532f2488b1fe.json": {
+      "sha256": "669b42a37be496cff49b9d3e0cc1bcf10b120e01067170f4a49e23fb70f8b1dc",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_6966e7beb03a45a8.json": {
+      "sha256": "2ad41e3bf58ac03cd34fc82b010d41906dcc187719a5ad7d69b53993a71f10fb",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_6a805763e465c980.json": {
+      "sha256": "9d56dc5c4701fd847b044f228237a5c70f9f15a71eac6c9eba3217b941585352",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_77029d6e55aa3c73.json": {
+      "sha256": "ea21609e7f164b808c5ef6830dcb78eb54e66a8744b9d634c40ce2cf92a25180",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_830596e9669c815e.json": {
+      "sha256": "08b2abd6a54e28fbd0baf64f6a4cd3c7dc43ed2d1a917106a34f3eb0a1ebbe33",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_8f5adaf9ad4f4588.json": {
+      "sha256": "f1f8f8f633c26c4f454ce9606496a71a791ca5425de957dc6315024a983c6c07",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_911fee78319a7540.json": {
+      "sha256": "0b464ee46108823c2ba945cef2a2ec4e6001339fb256758f8a524ed010b7697e",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_935ac6217eb939d7.json": {
+      "sha256": "79fd88739cc0d664caf3b1c69b0ee1de433b64faf049813f46808b2613514874",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_b442d4100d017165.json": {
+      "sha256": "9588023323e2bb5ec03c9d7a1752e3840c0b0cb31dade08b02b11fd604078c5a",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_bdda1801d1b8763e.json": {
+      "sha256": "7381ee92254b25995dbffe77bd2b00b87c1bb87c23340e9c69fa78ae13dc4e4d",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_c88262ec2ff18543.json": {
+      "sha256": "5fd7a6ccd930e317d67f9a555ce1b351baa452e325c0bdfac56e0d62c8bfb07e",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_d2dd41c6251fb289.json": {
+      "sha256": "bbc54dad8740c2a32e9845da3f21d7aa19fe8e661b5f952a2c94bca0c9fff7b4",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_dfb834fbc7dba36d.json": {
+      "sha256": "a9d7e1b1a1f5d6b4f296e9ac063247a362cf99a832d66ca7b1fcec4114a20cf5",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_e37de1a137054c75.json": {
+      "sha256": "71b0544d8ff8c29b9251bec79deb76ccfa64ce29f6b83cbc41e1e9ea22f91cef",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_ee6a7f7ecc9e88da.json": {
+      "sha256": "f7173714e3bdb7a36b821dcd11233824035d68f28d0c985a684d2ab648955a6b",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "allen_fdaca1c19ed2dac6.json": {
+      "sha256": "f7e46b1d24f9a07203a844a40de8942cbee678f9d8327f0eae6d887bef267e2d",
+      "cached_at": "2026-09-14T14:51:51.771335+00:00"
+    },
+    "ensembl_08f68cc71c3ae0d6.json": {
+      "sha256": "05e2907905452baec9235cfbe7aaf97c535cde4e8ed452346b13d2d056dd7fd4",
+      "cached_at": "2026-09-14T14:58:06.432259+00:00"
+    },
+    "ensembl_39008a2017d95cd8.json": {
+      "sha256": "e5f78523bc42164746f72456c762ce83164ff08151a90ecda89cf291eaf83b2d",
+      "cached_at": "2026-09-14T14:58:06.432259+00:00"
+    },
+    "ensembl_4b43c7a7b036e691.json": {
+      "sha256": "1bef78fd7ad84ad18e36544d68012c76c9501892ba13e04769dc4eead95e1266",
+      "cached_at": "2026-09-14T14:58:06.432259+00:00"
+    },
+    "ensembl_52695c2a43de1ae6.json": {
+      "sha256": "8c625e3ac7ba244fad97c61660c79527d8814e5c6465bae2a219449867e42360",
+      "cached_at": "2026-09-14T14:58:06.432259+00:00"
+    },
+    "ensembl_682e6dfccb7b81e0.json": {
+      "sha256": "97039334fe172f8fa845edc6a3c8e540c8168e9ca1333657f3244b7a69378983",
+      "cached_at": "2026-09-14T14:58:06.432259+00:00"
+    },
+    "ensembl_955b6399ad383ad4.json": {
+      "sha256": "66af54c77030c1776696799638e6df032b9d2c8733a07220a6b2669ea82d9625",
+      "cached_at": "2026-09-14T14:58:06.432259+00:00"
+    },
+    "ensembl_bf42e712ea54eeea.json": {
+      "sha256": "f4b8cae9f1667dc90893b121154c3502724fd98e8801e59e3be56cc41158c211",
+      "cached_at": "2026-09-14T14:58:06.432259+00:00"
+    },
+    "ensembl_ca1dcc6aab40ad67.json": {
+      "sha256": "699b936f30b7de3a2dfe305676174b263af0019714ea93c48ecf11ec4b244267",
+      "cached_at": "2026-09-14T14:58:06.432259+00:00"
+    },
+    "ensembl_d3d8b45998f987b6.json": {
+      "sha256": "306fe1316ad1f8f6017b35c080de75790acbb59c077341610d75ac85cd51ecd5",
+      "cached_at": "2026-09-14T14:58:06.432259+00:00"
+    },
+    "ensembl_release.json": {
+      "sha256": "d9461b147e1ec135a8e1c54925e0a741e9f2b827748b3a0ec288ac56ac5484e9",
+      "cached_at": "2026-09-14T15:00:46.073303+00:00"
+    },
+    "gene_data_counts.json.gz": {
+      "sha256": "9b2ffddb2e3650feec653833454134e5ab6f9ed8a46733803c8641d507ee01fa",
+      "cached_at": "2026-09-14T14:50:19.959044+00:00"
+    },
+    "gene_history.gz": {
+      "sha256": "21d793e0eaf401ad81098164c2b51f0b0596ac28e8c336169bd22ab1401cf13b",
+      "cached_at": "2026-09-14T14:53:30.441558+00:00"
+    },
+    "metadata.csv": {
+      "sha256": "e922dd2ab42173a5d0a17c974016de96314eeae780c4be33939603ba8a0912c1",
+      "cached_at": "2026-09-14T14:50:20.238190+00:00"
+    }
+  },
+  "summary": {
+    "one_to_one": 3989,
+    "unresolved": 69,
+    "ambiguous_ensembl": 7,
+    "shared_target": 18
+  }
+}

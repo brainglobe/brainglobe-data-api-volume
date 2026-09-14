@@ -1,0 +1,226 @@
+"""
+Provides tools to create and manage the metadata dictionaries and
+README files associated with atlases packaged within the BrainGlobe ecosystem.
+"""
+
+import json
+import re
+from datetime import datetime
+from typing import List, Tuple
+
+import requests
+from requests.exceptions import InvalidURL, MissingSchema
+
+from brainglobe_atlasapi import descriptors
+from brainglobe_atlasapi.atlas_generation.atlas_packaging_data import (
+    AnnotationInfo,
+    CoordinateSpaceInfo,
+    TemplateInfo,
+    TerminologyInfo,
+)
+from brainglobe_atlasapi.atlas_generation.structure_json_to_csv import (
+    convert_structure_json_to_csv,
+)
+from brainglobe_atlasapi.structure_tree_util import get_structures_tree
+
+
+def generate_metadata_dict(
+    name: str,
+    location: str,
+    citation: str,
+    atlas_link: str,
+    species: str,
+    symmetric: bool,
+    resolution: Tuple[int, int, int] | Tuple[float, float, float],
+    orientation: str,
+    version: str,
+    shape: Tuple[int, int, int],
+    additional_references: List[TemplateInfo],
+    atlas_packager: str,
+    coordinate_space: CoordinateSpaceInfo,
+    terminology: TerminologyInfo,
+    annotation_set: AnnotationInfo,
+    template: TemplateInfo,
+):
+    """
+    Generate a dictionary containing metadata for a BrainGlobe atlas.
+
+    Parameters
+    ----------
+    name : str
+        The name of the atlas.
+    location : str
+        The relative path to the atlas data within the brainglobe directory.
+    citation : str
+        The citation for the atlas.
+    atlas_link : str
+        A URL link to the atlas source or related publication.
+    species : str
+        The species the atlas belongs to (e.g., "mouse", "rat").
+    symmetric : bool
+        True if the atlas is symmetric, False otherwise.
+    resolution : Tuple[int, int, int] | Tuple[float, float, float]
+        The resolution of the atlas in micrometers per voxel.
+    orientation : str
+        The orientation of the atlas (e.g., "RAS", "LPS").
+    version : str
+        The version of the atlas.
+    shape : Tuple[int, int, int]
+        The shape (dimensions) of the atlas volume (e.g., (z, y, x)).
+    additional_references : List[TemplateInfo]
+        A list of additional reference links or citations.
+    atlas_packager : str
+        The name of the person or entity packaging the atlas.
+    coordinate_space : CoordinateSpaceInfo
+        Metadata for the coordinate space.
+    terminology : TerminologyInfo
+        Metadata for the terminology.
+    annotation_set : AnnotationInfo
+        Metadata for the annotation set.
+    template : TemplateInfo
+        Metadata for the template.
+
+
+    Returns
+    -------
+    dict
+        A dictionary containing all the metadata.
+    """
+    # Name should be author_species
+    assert len(name.split("_")) >= 2
+
+    # Control version formatting:
+    assert re.match("[0-9]+\\.[0-9]+", version)
+
+    # We ask for DOI and correct link only if atlas is published:
+    if citation != "unpublished":
+        assert "doi" in citation
+
+        # Test url:
+        try:
+            requests.get(atlas_link)
+        except (MissingSchema, InvalidURL):
+            raise InvalidURL(
+                "Ensure that the URL is valid and formatted correctly."
+            )
+
+    # Enforce correct format for symmetric, resolution and shape:
+    assert isinstance(symmetric, bool)
+    assert len(resolution) == 3
+    assert len(shape) == 3
+
+    resolution = tuple([float(v) for v in resolution])
+    shape = tuple(int(v) for v in shape)
+
+    assert isinstance(additional_references, list)
+
+    additional_references_metadata = [
+        ref_info.metadata for ref_info in additional_references
+    ]
+
+    return dict(
+        name=name,
+        location=location,
+        citation=citation,
+        atlas_link=atlas_link,
+        species=species,
+        symmetric=symmetric,
+        resolution=resolution,
+        orientation=orientation,
+        version=version,
+        shape=shape,
+        additional_references=additional_references_metadata,
+        atlas_packager=atlas_packager,
+        coordinate_space=coordinate_space.metadata,
+        terminology=terminology.metadata,
+        annotation_set=annotation_set.metadata,
+        template=template.metadata,
+    )
+
+
+def create_readme(uncompr_atlas_path, metadata_dict, structures):
+    """
+    Create a README.txt file for the atlas in the specified path.
+
+    This function generates a comprehensive README file containing atlas
+    metadata and structure information for a BrainGlobe atlas.
+
+    Parameters
+    ----------
+    uncompr_atlas_path : pathlib.Path
+        The path to the uncompressed atlas directory where the README will
+        be saved.
+    metadata_dict : dict
+        A dictionary containing the atlas's metadata (e.g., name, citation,
+        species).
+    structures : list of dict
+        A list of dictionaries, where each dictionary represents a structure
+        with its ID, name, and other relevant properties.
+    """
+    readmepath = str(uncompr_atlas_path / "README.txt")
+
+    # First write the structure tree
+    structuresTree = get_structures_tree(structures)
+    structuresTree.save2file(readmepath)
+
+    # The prepend the header and info
+    with open(readmepath, "r", encoding="utf-8") as original:
+        tree = original.read()
+
+    with open(readmepath, "w", encoding="utf-8") as out:
+        out.write("-- BRAINGLOBE ATLAS --\n")
+
+        now = datetime.now()
+        out.write("Generated on: " + now.strftime("%d/%m/%Y") + "\n\n")
+
+        out.write("------------------------------\n\n\n")
+
+        for key, value in metadata_dict.items():
+            out.write(f"    {key}:   {value}\n")
+
+        out.write("\n\n\n")
+        out.write("------------------------------\n\n\n")
+        out.write("\n\n\n")
+
+        out.write("-- BRAIN STRUCTURES TREE --\n")
+
+        out.write(tree)
+
+
+def create_structures_csv(uncompr_atlas_path, root):
+    """
+    Convert an atlas structure json dictionary to csv. For cellfinder
+    compatibility and ease of browsing.
+
+    Parameters
+    ----------
+    uncompr_atlas_path : str or Path object
+        path to uncompressed atlas folder
+    """
+    convert_structure_json_to_csv(
+        uncompr_atlas_path / "structures.json", root=root
+    )
+
+
+def create_metadata_files(
+    dest_dir, metadata_dict, structures, root_id, additional_metadata={}
+):
+    """
+    Automatic creation of `structures.csv` and `README.txt`
+    from an atlas files. All Files are saved in the uncompressed atlas folder
+    awaiting compression and upload to GIN.
+
+    :param uncompr_atlas_path: path to uncompressed atlas folder
+    :param metadata_dict: dict with atlas metadata
+    :param structures: list of dictionaries with structures hierarchical info
+    :param additional_metadata: Dict to add to atlas metadata
+    """
+    # write metadata dict:
+    with open(
+        dest_dir / descriptors.METADATA_FILENAME, "w", encoding="utf-8"
+    ) as f:
+        # only save additional metadata to json, don't include in readme
+        json.dump({**metadata_dict, **additional_metadata}, f)
+
+    create_structures_csv(dest_dir, root_id)
+    create_readme(dest_dir, metadata_dict, structures)
