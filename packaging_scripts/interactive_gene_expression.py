@@ -9,9 +9,11 @@ import re
 from pathlib import Path
 
 import pooch
-from brainglobe_atlasapi.atlas_generation.wrapup import wrapup_atlas_from_data
-from brainglobe_atlasapi.utils import atlas_name_from_repr
 from brainglobe_utils.IO.image import load_any
+
+from brainglobe_data_api_volume.atlas_generation.wrapup import (
+    wrapup_atlas_from_data,
+)
 
 # Copy-paste this script into a new file and fill in the functions to package
 # your own atlas.
@@ -202,14 +204,6 @@ if __name__ == "__main__":
     bg_root_dir = BG_ROOT_DIR
     bg_root_dir.mkdir(parents=True, exist_ok=True)
 
-    # Fail early if any version of this atlas already exists
-    atlas_prefix = atlas_name_from_repr(ATLAS_NAME, RESOLUTION)
-    existing = list(bg_root_dir.glob(f"{atlas_prefix}_v*"))
-
-    if existing:
-        raise FileExistsError(
-            f"Atlas output already exists in {bg_root_dir}. "
-        )
     download_resources()
     reference_volume, annotated_volume = retrieve_reference_and_annotation()
     additional_references = retrieve_additional_references()
@@ -217,7 +211,7 @@ if __name__ == "__main__":
     structures = retrieve_structure_information()
     meshes_dict = retrieve_or_construct_meshes()
 
-    output_filename = wrapup_atlas_from_data(
+    output_paths = wrapup_atlas_from_data(
         atlas_name=ATLAS_NAME,
         atlas_minor_version=__version__,
         citation=CITATION,

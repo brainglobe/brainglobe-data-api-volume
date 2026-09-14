@@ -14,19 +14,7 @@ import numpy.typing as npt
 import pandas as pd
 import treelib
 import zarr
-from cloudvolume import CloudVolume
-from numba.core import types
-from numba.typed import Dict as TypedDict
-from tqdm import tqdm
-
 from brainglobe_atlasapi import atlas_generation, descriptors
-from brainglobe_atlasapi.atlas_generation.atlas_packaging_data import (
-    AnnotationInfo,
-    AtlasPackagingData,
-    CoordinateSpaceInfo,
-    TemplateInfo,
-    TerminologyInfo,
-)
 from brainglobe_atlasapi.atlas_generation.mesh_utils import (
     write_mesh,
     write_mesh_info,
@@ -62,6 +50,18 @@ from brainglobe_atlasapi.structure_tree_util import (
     postorder_depth_first_search,
 )
 from brainglobe_atlasapi.utils import atlas_name_from_repr
+from cloudvolume import CloudVolume
+from numba.core import types
+from numba.typed import Dict as TypedDict
+from tqdm import tqdm
+
+from brainglobe_data_api_volume.atlas_generation.atlas_packaging_data import (
+    AnnotationInfo,
+    AtlasPackagingData,
+    CoordinateSpaceInfo,
+    TemplateInfo,
+    TerminologyInfo,
+)
 
 # This should be changed every time we make changes in the atlas
 # structure:
@@ -175,35 +175,6 @@ def _transformations_from_scales(
         ]
         for level in scales
     ]
-
-
-def _save_terminology_csv(
-    structures_list: List[Dict],
-    terminology_path: Path,
-) -> None:
-    structures_df = pd.DataFrame(structures_list)
-    terminology_df = pd.DataFrame()
-
-    terminology_df["identifier"] = structures_df["id"].astype(np.uint32)
-    terminology_df["parent_identifier"] = (
-        structures_df["structure_id_path"]
-        .apply(lambda x: x[-2] if len(x) > 1 else None)
-        .astype(pd.UInt32Dtype())
-    )
-    terminology_df["annotation_value"] = structures_df["id"].astype(np.uint32)
-    terminology_df["name"] = structures_df["name"].astype(pd.StringDtype())
-    terminology_df["abbreviation"] = structures_df["acronym"].astype(
-        pd.StringDtype()
-    )
-    terminology_df["color_hex_triplet"] = structures_df["rgb_triplet"].apply(
-        lambda x: "".join(f"{c:02X}" for c in x)
-    )
-    terminology_df["color_hex_triplet"] = "#" + terminology_df[
-        "color_hex_triplet"
-    ].astype(pd.StringDtype())
-    terminology_df["root_identifier_path"] = structures_df["structure_id_path"]
-
-    terminology_df.to_csv(terminology_path, index=False)
 
 
 def _save_coordinate_space_manifest(
@@ -851,9 +822,15 @@ def wrapup_atlas_from_data(
     overwrite=False,
     cleanup_files=None,
     compress=None,
-) -> Path:
+) -> List[Path]:
     """
-    Finalise an atlas with truly consistent format from all the data.
+    Export additional references as OME-Zarr components.
+
+    Primary template, annotation, terminology, and coordinate-space components
+    are not written or fetched. Their input data are still required for
+    AtlasPackagingData preparation. No atlas manifest or full-atlas validation
+    is produced. Atlas-only options such as scale_meshes, resolution_mapping,
+    and additional_metadata have no effect on the exported references.
 
     Parameters
     ----------
@@ -891,7 +868,7 @@ def wrapup_atlas_from_data(
         dict of meshio-compatible mesh file paths in the form
         {struct_id: meshpath}
     working_dir : str | Path
-        Path where the atlas will be generated.
+        Parent of the brainglobe-atlasapi component output directory.
     atlas_packager : str or None
         Credit for those responsible for converting the atlas
         into the BrainGlobe format.
@@ -902,22 +879,18 @@ def wrapup_atlas_from_data(
         to lowest resolution.
         If none is provided, atlas is assumed to be symmetric.
     scale_meshes: bool, optional
-        (Default value = False).
-        If True the meshes points are scaled by the resolution
-        to ensure that they are specified in microns,
-        regardless of the atlas resolution.
+        Retained for call compatibility; unused for reference-only exports.
     resolution_mapping: List[int], optional
-        a list of three mapping the target space axes to the source axes
-        only needed for mesh scaling of anisotropic atlases
+        Retained for call compatibility; unused for reference-only exports.
     additional_references: List[Tuple[Dict | str, ValidComponentData]] | Dict[str, ValidComponentData] | None
         List of tuples containing metadata and arrays for secondary templates.
     additional_metadata: dict, optional
-        (Default value = empty dict).
-        Additional metadata to write to manifest.json
+        Retained for call compatibility; no atlas manifest is written.
     overwrite : bool, optional
         (Default value = False).
-        If True, will overwrite existing atlas directory.
-        If False and atlas directory exists, raises FileExistsError.
+        If True, replace existing additional-reference component directories.
+        If False and a reference output exists, raise FileExistsError.
+        References marked use_existing are reused without deletion.
     cleanup_files : deprecated, optional
         (Default value = None).
         Deprecated and has no effect.
@@ -927,8 +900,9 @@ def wrapup_atlas_from_data(
 
     Returns
     -------
-    Path
-        Path to the finalised atlas directory.
+    List[Path]
+        OME-Zarr paths for the additional references, in input order.
+        An empty reference collection returns an empty list without writing.
     """  # noqa: E501
     if cleanup_files is not None:
         print(
@@ -940,31 +914,8 @@ def wrapup_atlas_from_data(
 
     working_dir = Path(working_dir) / "brainglobe-atlasapi"
     atlas_version = f"{ATLAS_VERSION}.{atlas_minor_version}"
-    atlas_version_underscore = atlas_version.replace(".", "_")
-
-    # Normalise resolution to list form for the early overwrite check.
-    resolution_list = (
-        [resolution] if isinstance(resolution, tuple) else list(resolution)
-    )
-    for res in resolution_list:
-        atlas_name_with_res = f"{atlas_name}_{res[0]}um"
-        atlas_dir = (
-            working_dir
-            / descriptors.V3_ATLAS_ROOTDIR
-            / atlas_name_with_res
-            / atlas_version_underscore
-        )
-        if atlas_dir.exists():
-            if overwrite:
-                print(
-                    f"Atlas directory already exists, overwriting: {atlas_dir}"
-                )
-                shutil.rmtree(atlas_dir)
-            else:
-                raise FileExistsError(
-                    f"Atlas output already exists at {atlas_dir}. "
-                    "Try setting overwrite=True"
-                )
+    if not additional_references:
+        return []
 
     if template_info is None:
         template_info = {
@@ -1022,13 +973,9 @@ def wrapup_atlas_from_data(
 
     additional_metadata = additional_metadata or {}
 
-    for component_info in [
-        template_info,
-        annotation_info,
-        terminology_info,
-        coordinate_space_info,
-        *[ref_info for ref_info, _ in additional_template_list],
-    ]:
+    for component_info, _ in additional_template_list:
+        if component_info.use_existing:
+            continue
         component_dir = (
             working_dir
             / component_info.root_dir
@@ -1069,76 +1016,19 @@ def wrapup_atlas_from_data(
         hemispheres_stack=hemispheres_stack,
         additional_references=additional_template_list,
         additional_metadata=additional_metadata,
+        fetch_primary_components=False,
     )
 
     transformations = _transformations_from_scales(
         [[res / 1000 for res in t] for t in packaging_data.resolution]
     )
 
-    template_multiscale = _save_template_data(
-        packaging_data,
-        transformations,
-    )
-
-    shapes = {}
-
-    for resolution in packaging_data.resolution:
-        # Find the closest matching resolution in the template multiscale
-        template_resolutions = [
-            tuple(im.scale.values()) for im in template_multiscale.images
-        ]
-        closest_template_idx = np.argmin(
-            [
-                np.linalg.norm(np.array(res) * 1000 - np.array(resolution))
-                for res in template_resolutions
-            ]
-        )
-        closest_template_shape = template_multiscale.images[
-            closest_template_idx
-        ].data.shape
-        shapes[resolution] = closest_template_shape
-
     _save_additional_references(
         packaging_data,
         transformations,
     )
 
-    if not terminology_info.use_existing:
-        terminology_dir = working_dir / terminology_info.stub
-
-        terminology_dir.parent.mkdir(parents=True, exist_ok=True)
-        _save_terminology_csv(
-            packaging_data.structures_list,
-            terminology_dir,
-        )
-
-    if not coordinate_space_info.use_existing:
-        coordinate_space_path = working_dir / coordinate_space_info.stub
-
-        coordinate_space_path.parent.mkdir(parents=True, exist_ok=True)
-        _save_coordinate_space_manifest(
-            coordinate_space_info.metadata, coordinate_space_path
-        )
-
-    _save_annotation_data(
-        packaging_data,
-        transformations,
-        scale_meshes,
-        resolution_mapping,
-    )
-
-    _save_4d_annotation_data(
-        packaging_data,
-        transformations,
-    )
-
-    for resolution in packaging_data.resolution:
-        shape = shapes[resolution]
-        _finalize_atlas_at_resolution(
-            resolution=resolution,
-            shape=shape,
-            packaging_data=packaging_data,
-            overwrite=overwrite,
-        )
-
-    return atlas_dir
+    return [
+        working_dir / ref_info.stub
+        for ref_info, _ in packaging_data.additional_references
+    ]

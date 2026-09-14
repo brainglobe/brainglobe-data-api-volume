@@ -9,8 +9,6 @@ import numpy as np
 import numpy.typing as npt
 import s3fs
 import tifffile
-from fsspec.callbacks import TqdmCallback
-
 from brainglobe_atlasapi import descriptors
 from brainglobe_atlasapi.atlas_generation.structures import (
     check_struct_consistency,
@@ -21,6 +19,7 @@ from brainglobe_atlasapi.descriptors import (
     ResolutionList,
     ValidComponentData,
 )
+from fsspec.callbacks import TqdmCallback
 
 
 def check_requested_component(
@@ -389,6 +388,9 @@ class AtlasPackagingData:
         templates.
     additional_metadata : Dict, optional
         Additional metadata to write to metadata.json.
+    fetch_primary_components : bool, optional
+        Fetch requested primary components during preparation (default True).
+        Set False for exports that only write additional references.
     symmetric : bool, optional
         Whether the atlas is symmetric across the midline.
     """  # noqa: E501
@@ -421,6 +423,8 @@ class AtlasPackagingData:
         ],
     ] = field(default_factory=list)
     additional_metadata: Dict = field(default_factory=dict)
+    # Disable remote primary-component downloads for reference-only exports.
+    fetch_primary_components: bool = True
 
     def __post_init__(self):
         """
@@ -471,10 +475,14 @@ class AtlasPackagingData:
 
         check_struct_consistency(self.structures_list)
 
-        check_requested_component(self.template_info, self.working_dir)
-        check_requested_component(self.annotation_info, self.working_dir)
-        check_requested_component(self.terminology_info, self.working_dir)
-        check_requested_component(self.coordinate_space_info, self.working_dir)
+        if self.fetch_primary_components:
+            for component_info in (
+                self.template_info,
+                self.annotation_info,
+                self.terminology_info,
+                self.coordinate_space_info,
+            ):
+                check_requested_component(component_info, self.working_dir)
 
         for template_info, _ in self.additional_references:
             check_requested_component(template_info, self.working_dir)
