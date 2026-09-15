@@ -28,9 +28,11 @@ The wrapup writes a manifest under
 `brainglobe-data-api/manifests/carey_interactive_gene_mouse_25um/<version>/`
 and the gene volumes under `brainglobe-data-api/volumes/`. The manifest lists
 which volumes belong to the dataset. Volume arrays load on first access.
-The packaging script lowercases names at discovery: `Rorb.nii.gz` becomes
-`rorb`. Wrapup requires lowercase names and uses them unchanged for volume
-directories and lookup keys.
+The packaging script converts names to ASCII and lowercases them at discovery:
+`Rórb.nii.gz` becomes `rorb`. Wrapup requires lowercase ASCII names and uses
+them unchanged for volume directories and lookup keys.
+Normalization uses Python's standard library for accents, full-width letters,
+and Unicode dashes. Other non-ASCII characters are rejected.
 
 
 Pass `atlas_space="allen_mouse_25um"` to `wrapup_volume_from_data` to record the

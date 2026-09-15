@@ -4,6 +4,7 @@ Use this script as a starting point to package a new BrainGlobe atlas by
 filling in the required functions and metadata.
 """
 
+import unicodedata
 from pathlib import Path
 
 import pooch
@@ -179,7 +180,8 @@ def retrieve_volumes(gene: str | None = None):
     """List cached NIfTI paths, named by their source gene filenames.
 
     If gene is provided, select only that gene (for example, "Sst").
-    Names are lowercased; no Ensembl ID mapping is applied.
+    Accents and Unicode dashes are normalized before lowercasing.
+    Other non-ASCII characters are rejected; no Ensembl ID mapping is applied.
     """
     source_dir = BG_ROOT_DIR / "gene_volumes"
     existing_files = sorted(source_dir.rglob("*.nii.gz"))
@@ -193,7 +195,16 @@ def retrieve_volumes(gene: str | None = None):
             raise FileNotFoundError(f"No cached volume for {gene!r}")
     volumes = {}
     for file in existing_files:
-        reference_name = file.name.removesuffix(".nii.gz").lower()
+        reference_name = unicodedata.normalize(
+            "NFKD", file.name.removesuffix(".nii.gz").replace("\uf02a", "*")
+        )
+        reference_name = "".join(
+            char for char in reference_name if not unicodedata.combining(char)
+        ).translate(str.maketrans("‐‑‒–—−", "------")).lower()
+        if not reference_name.isascii():
+            raise ValueError(
+                f"Cannot convert gene name to ASCII: {file.name!r}"
+            )
         if reference_name in volumes:
             raise ValueError(f"Duplicate gene volume: {reference_name}")
         volumes[reference_name] = file

@@ -968,7 +968,8 @@ def wrapup_volume_from_data(
         Retained for call compatibility; unused for volume exports.
     volumes: List[Tuple[Dict | str, ValidComponentData]] | Dict[str, ValidComponentData] | None
         List of tuples containing metadata and arrays for volumes.
-        Volume names must already be lowercase.
+        Volume names must already be lowercase and contain only ASCII
+        characters.
         Pass TIFF or NIfTI paths to load and write one volume at a time.
         For multiple resolutions, pass a list of paths for each volume.
     additional_metadata: dict, optional
@@ -1032,6 +1033,11 @@ def wrapup_volume_from_data(
             else:
                 ref_dict = ref_metadata
 
+            if not ref_dict["name"].isascii():
+                raise ValueError(
+                    f"Volume name must contain only ASCII characters: "
+                    f"{ref_dict['name']!r}"
+                )
             if ref_dict["name"] != ref_dict["name"].lower():
                 raise ValueError(
                     f"Volume name must be lowercase: {ref_dict['name']!r}"
