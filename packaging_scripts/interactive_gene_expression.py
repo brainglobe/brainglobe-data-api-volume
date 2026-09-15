@@ -30,6 +30,9 @@ __version__ = 0
 # brainglobe_atlasapi/atlas_names.py
 ATLAS_NAME = "carey_interactive_gene_mouse"
 
+# BrainGlobe atlas the gene volumes are registered to.
+ATLAS_SPACE = "carea_mouse_25um"
+
 # DOI of the most relevant citable document
 CITATION = "https://doi.org/10.64898/2026.01.20.700446"
 
@@ -216,6 +219,7 @@ if __name__ == "__main__":
 
     output_paths = wrapup_atlas_from_data(
         atlas_name=ATLAS_NAME,
+        atlas_space=ATLAS_SPACE,
         atlas_minor_version=__version__,
         citation=CITATION,
         atlas_link=ATLAS_LINK,
@@ -230,6 +234,7 @@ if __name__ == "__main__":
         working_dir=bg_root_dir,
         hemispheres_stack=None,
         additional_references=additional_references,
+        overwrite=True,
     )
 
     for output_path in output_paths:

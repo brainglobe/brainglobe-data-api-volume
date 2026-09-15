@@ -724,6 +724,7 @@ def _save_reference_manifests(
     atlas_packager=None,
     additional_metadata=None,
     overwrite=False,
+    atlas_space: str | None = None,
 ):
     """Register saved references as a named dataset."""
     reference_metadata = [
@@ -769,6 +770,7 @@ def _save_reference_manifests(
         manifests[path] = {
             **(additional_metadata or {}),
             "name": atlas_name,
+            "atlas_space": atlas_space,
             "location": "/" + path.parent.relative_to(working_dir).as_posix(),
             "version": atlas_version,
             "citation": citation,
@@ -908,6 +910,7 @@ def wrapup_atlas_from_data(
     overwrite=False,
     cleanup_files=None,
     compress=None,
+    atlas_space: str | None = None,
 ) -> List[Path]:
     """
     Export additional references as OME-Zarr components.
@@ -983,6 +986,9 @@ def wrapup_atlas_from_data(
     compress : deprecated, optional
         (Default value = None).
         Deprecated and has no effect.
+    atlas_space : str, optional
+        BrainGlobe atlas name the dataset is registered to, including resolution
+        (e.g. "allen_mouse_25um"). Stored in the dataset manifest.
 
     Returns
     -------
@@ -1083,6 +1089,7 @@ def wrapup_atlas_from_data(
         atlas_packager=atlas_packager,
         additional_metadata=additional_metadata,
         overwrite=overwrite,
+        atlas_space=atlas_space,
     )
 
     return [
