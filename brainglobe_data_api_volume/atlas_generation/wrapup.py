@@ -717,6 +717,31 @@ def _volume_manifest_path(
     )
 
 
+def _validate_alternate_names(
+    alternate_names: Dict[str, List[str]] | None,
+    names: List[str],
+) -> Dict[str, List[str]]:
+    """Check alternate names match volumes; return them in volume order."""
+    alternate_names = alternate_names or {}
+    unknown = set(alternate_names) - set(names)
+    if unknown:
+        raise ValueError(
+            f"alternate_names given for unknown volumes: {sorted(unknown)}"
+        )
+    for name, alternates in alternate_names.items():
+        if isinstance(alternates, str) or not all(
+            isinstance(alt, str) for alt in alternates
+        ):
+            raise ValueError(
+                f"alternate_names for {name!r} must be a list of strings"
+            )
+    return {
+        name: list(alternate_names[name])
+        for name in names
+        if name in alternate_names
+    }
+
+
 def _save_volume_manifests(
     working_dir,
     atlas_name,
@@ -730,12 +755,14 @@ def _save_volume_manifests(
     additional_metadata=None,
     overwrite=False,
     atlas_space: str | None = None,
+    alternate_names: Dict[str, List[str]] | None = None,
 ):
     """Register saved volumes as a named dataset."""
     volume_metadata = [ref.metadata for ref in volumes]
     names = [ref["name"] for ref in volume_metadata]
     if len(set(names)) != len(names):
         raise ValueError("Volume names must be unique")
+    alternate_names = _validate_alternate_names(alternate_names, names)
     manifests = {}
     for resolution in resolutions:
         shapes = []
@@ -778,6 +805,7 @@ def _save_volume_manifests(
             "symmetric": None,
             "volumes_only": True,
             "volumes": volume_metadata,
+            "alternate_names": alternate_names,
         }
     for path, metadata in manifests.items():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -906,6 +934,7 @@ def wrapup_volume_from_data(
     cleanup_files=None,
     compress=None,
     atlas_space: str | None = None,
+    alternate_names: Dict[str, List[str]] | None = None,
 ) -> List[Path]:
     """
     Export volumes as OME-Zarr components.
@@ -990,6 +1019,10 @@ def wrapup_volume_from_data(
     atlas_space : str, optional
         BrainGlobe atlas name the dataset is registered to, including resolution
         (e.g. "allen_mouse_25um"). Stored in the dataset manifest.
+    alternate_names : Dict[str, List[str]], optional
+        Alternate names (e.g. gene synonyms) for each volume, keyed by volume
+        name. Volumes may be omitted. Stored in the dataset manifest as
+        "alternate_names", which is an empty mapping if none are given.
 
     Returns
     -------
@@ -1050,6 +1083,10 @@ def wrapup_volume_from_data(
             component_info.metadata["name"] = ref_dict["name"]
             volume_list.append((component_info, ref_tuple[1]))
 
+    _validate_alternate_names(
+        alternate_names, [info.metadata["name"] for info, _ in volume_list]
+    )
+
     for component_info, _ in volume_list:
         if component_info.use_existing:
             continue
@@ -1099,6 +1136,7 @@ def wrapup_volume_from_data(
         additional_metadata=additional_metadata,
         overwrite=overwrite,
         atlas_space=atlas_space,
+        alternate_names=alternate_names,
     )
 
     return [

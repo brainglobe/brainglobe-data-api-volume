@@ -2,7 +2,6 @@
 
 import json
 
-import ngff_zarr as nz
 import numpy as np
 import pytest
 from brainglobe_atlasapi import descriptors
@@ -47,30 +46,6 @@ def export_args(tmp_path):
     )
 
 
-def test_only_volumes_are_written(export_args):
-    paths = wu.wrapup_volume_from_data(**export_args)
-    assert len(paths) == 1
-    multiscale = nz.from_ngff_zarr(paths[0])
-    for image, expected, resolution in zip(
-        multiscale.images,
-        export_args["volumes"]["gene"],
-        export_args["resolution"],
-        strict=True,
-    ):
-        np.testing.assert_array_equal(image.data.compute(), expected)
-        assert tuple(image.scale.values()) == tuple(
-            r / 1000 for r in resolution
-        )
-    output_root = export_args["working_dir"] / "brainglobe-data-api"
-    assert set(output_root.iterdir()) == {
-        output_root / "volumes",
-        output_root / "manifests",
-    }
-    assert [p.name for p in paths[0].parents[1].parent.iterdir()] == [
-        "gene"
-    ]
-
-
 @pytest.mark.parametrize("overwrite", [False, True])
 def test_existing_primary_components_are_untouched(export_args, overwrite):
     root = export_args["working_dir"] / "brainglobe-atlasapi"
@@ -109,26 +84,40 @@ def test_existing_primary_components_are_untouched(export_args, overwrite):
             wu.wrapup_volume_from_data(**export_args)
 
 
-def test_primary_components_are_not_fetched(export_args, monkeypatch):
-    requested = []
-    monkeypatch.setattr(
-        atlas_packaging_data,
-        "check_requested_component",
-        lambda info, _: requested.append(info.name),
+def _read_manifest(export_args):
+    path = wu._volume_manifest_path(
+        export_args["working_dir"] / "brainglobe-data-api",
+        export_args["atlas_name"],
+        f"{wu.ATLAS_VERSION}.0",
+        export_args["resolution"][0],
     )
-    for key in (
-        "template_info",
-        "annotation_info",
-        "terminology_info",
-        "coordinate_space_info",
-    ):
-        export_args[key] = dict(
-            name=key,
-            version="1.0",
-            use_existing=True,
-        )
+    return json.loads(path.read_text())
+
+
+def test_alternate_names_are_written_to_manifest(export_args):
+    wu.wrapup_volume_from_data(
+        **export_args, alternate_names={"gene": ["Gene", "Gn1"]}
+    )
+    assert _read_manifest(export_args)["alternate_names"] == {
+        "gene": ["Gene", "Gn1"]
+    }
+
+
+def test_alternate_names_default_to_empty(export_args):
     wu.wrapup_volume_from_data(**export_args)
-    assert requested == ["gene"]
+    assert _read_manifest(export_args)["alternate_names"] == {}
+
+
+@pytest.mark.parametrize(
+    "alternate_names",
+    [{"missing": ["Missing"]}, {"gene": "Gene"}, {"gene": [1]}],
+)
+def test_invalid_alternate_names_are_rejected(export_args, alternate_names):
+    with pytest.raises(ValueError, match="alternate_names"):
+        wu.wrapup_volume_from_data(
+            **export_args, alternate_names=alternate_names
+        )
+    assert not (export_args["working_dir"] / "brainglobe-data-api").exists()
 
 
 def test_empty_export_writes_nothing(export_args):

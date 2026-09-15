@@ -4,10 +4,12 @@ Use this script as a starting point to package a new BrainGlobe atlas by
 filling in the required functions and metadata.
 """
 
+import json
 import unicodedata
 from pathlib import Path
 
 import pooch
+import requests
 
 from brainglobe_data_api_volume.atlas_generation.wrapup import (
     wrapup_volume_from_data,
@@ -64,6 +66,11 @@ BG_ROOT_DIR = Path.home() / "brainglobe_workingdir" / ATLAS_NAME
 # Package one gene while validating. Change the name to test another gene,
 # or set to None to package all genes.
 GENE_TO_PACKAGE = None
+
+# Allen Brain Atlas API, queried for gene synonyms recorded as alternate names
+ALLEN_API_URL = "https://api.brain-map.org/api/v2/data/query.json"
+ALLEN_BATCH_SIZE = 200
+ALIASES_CACHE = "allen_gene_aliases.json"
 
 
 def download_resources() -> list[Path]:
@@ -176,6 +183,49 @@ def retrieve_or_construct_meshes():
     return meshes_dict
 
 
+def fetch_allen_gene_aliases(symbols: list[str]) -> dict[str, list[str]]:
+    """Look up gene synonyms for mouse gene symbols in the Allen API.
+
+    Aliases come from the ``alias_tags`` field, merged across every Allen
+    record sharing the symbol. Results are cached in
+    ``BG_ROOT_DIR / ALIASES_CACHE``; symbols Allen does not know map to an
+    empty list, so they are not queried again.
+    """
+    cache_path = BG_ROOT_DIR / ALIASES_CACHE
+    cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}
+    missing = sorted({symbol for symbol in symbols if symbol not in cache})
+    for start in range(0, len(missing), ALLEN_BATCH_SIZE):
+        batch = missing[start : start + ALLEN_BATCH_SIZE]
+        acronyms = ",".join(f"'{symbol}'" for symbol in batch)
+        response = requests.get(
+            ALLEN_API_URL,
+            params={
+                "criteria": (
+                    f"model::Gene,rma::criteria,[acronym$in{acronyms}],"
+                    f"organism[name$eq'{SPECIES.capitalize()}']"
+                ),
+                "only": "acronym,alias_tags",
+                "num_rows": "all",
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        result = response.json()
+        if not result["success"]:
+            raise RuntimeError(f"Allen API query failed: {result['msg']}")
+        aliases = {symbol: [] for symbol in batch}
+        for record in result["msg"]:
+            if record["acronym"] not in aliases:
+                continue
+            for alias in (record["alias_tags"] or "").split():
+                if alias not in aliases[record["acronym"]]:
+                    aliases[record["acronym"]].append(alias)
+        cache.update(aliases)
+        cache_path.write_text(json.dumps(cache, indent=4, sort_keys=True))
+        print(f"Fetched Allen aliases: {start + len(batch)}/{len(missing)}")
+    return {symbol: cache[symbol] for symbol in symbols}
+
+
 def retrieve_volumes(gene: str | None = None):
     """List cached NIfTI paths, named by their source gene filenames.
 
@@ -211,6 +261,28 @@ def retrieve_volumes(gene: str | None = None):
     return volumes
 
 
+def retrieve_alternate_names(volumes: dict[str, Path]) -> dict[str, list[str]]:
+    """Map each volume name to its source gene symbol and Allen aliases.
+
+    The symbol is the case-preserved source filename (for example, "Rorb"
+    for volume "rorb"), listed first; names equal to the volume name are
+    omitted.
+    """
+    symbols = {
+        name: file.name.removesuffix(".nii.gz").replace("\uf02a", "")
+        for name, file in volumes.items()
+    }
+    aliases = fetch_allen_gene_aliases(list(symbols.values()))
+    return {
+        name: [
+            alt
+            for alt in dict.fromkeys([symbol, *aliases[symbol]])
+            if alt != name
+        ]
+        for name, symbol in symbols.items()
+    }
+
+
 ### If the code above this line has been filled correctly, nothing needs to be
 ### edited below (unless variables need to be passed between the functions).
 if __name__ == "__main__":
@@ -223,6 +295,7 @@ if __name__ == "__main__":
     download_resources()
     reference_volume, annotated_volume = retrieve_reference_and_annotation()
     volumes = retrieve_volumes(GENE_TO_PACKAGE)
+    alternate_names = retrieve_alternate_names(volumes)
     hemispheres_stack = retrieve_hemisphere_map()
     structures = retrieve_structure_information()
     meshes_dict = retrieve_or_construct_meshes()
@@ -244,6 +317,7 @@ if __name__ == "__main__":
         working_dir=bg_root_dir,
         hemispheres_stack=None,
         volumes=volumes,
+        alternate_names=alternate_names,
         overwrite=True,
     )
 
