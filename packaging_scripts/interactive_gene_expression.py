@@ -63,7 +63,7 @@ BG_ROOT_DIR = Path.home() / "brainglobe_workingdir" / ATLAS_NAME
 
 # Package one gene while validating. Change the name to test another gene,
 # or set to None to package all genes.
-GENE_TO_PACKAGE = "Rorb"
+GENE_TO_PACKAGE = None
 
 
 def download_resources() -> list[Path]:

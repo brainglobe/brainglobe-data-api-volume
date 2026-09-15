@@ -17,7 +17,6 @@ from brainglobe_atlasapi.descriptors import (
     V3_ANNOTATION_MAP_NAME,
     V3_ANNOTATION_MASKS_NAME,
     V3_ANNOTATION_NAME,
-    V3_ATLAS_ROOTDIR,
     V3_HEMISPHERES_NAME,
     V3_MESHES_DIRECTORY,
     V3_TEMPLATE_NAME,
@@ -32,6 +31,10 @@ from brainglobe_atlasapi.utils import (
 )
 
 from brainglobe_data_api_volume import core
+from brainglobe_data_api_volume.descriptors import (
+    DATA_ROOTDIR,
+    MANIFESTS_ROOTDIR,
+)
 
 
 def _version_tuple_from_str(version_str):
@@ -97,7 +100,7 @@ class BrainGlobeVolume(core.Volume):
         else:
             self.brainglobe_dir = Path(brainglobe_dir)
 
-        self.brainglobe_dir = self.brainglobe_dir / "brainglobe-atlasapi"
+        self.brainglobe_dir = self.brainglobe_dir / DATA_ROOTDIR
 
         self.brainglobe_dir.mkdir(parents=True, exist_ok=True)
 
@@ -133,22 +136,24 @@ class BrainGlobeVolume(core.Volume):
         if self._local_full_name is not None:
             return self._local_full_name
 
-        (self.brainglobe_dir / V3_ATLAS_ROOTDIR).mkdir(
+        (self.brainglobe_dir / MANIFESTS_ROOTDIR).mkdir(
             parents=True, exist_ok=True
         )
 
         if self._requested_version is not None:
             pattern = (
-                f"{V3_ATLAS_ROOTDIR}/{self.atlas_name}/"
+                f"{MANIFESTS_ROOTDIR}/{self.atlas_name}/"
                 f"{self._requested_version}/manifest.json"
             )
         else:
             pattern = (
-                rf"{V3_ATLAS_ROOTDIR}/{self.atlas_name}/"
+                rf"{MANIFESTS_ROOTDIR}/{self.atlas_name}/"
                 rf"\d+(?:_\d+)?/manifest.json"
             )
 
-        glob_pattern = f"{V3_ATLAS_ROOTDIR}/{self.atlas_name}/*/manifest.json"
+        glob_pattern = (
+            f"{MANIFESTS_ROOTDIR}/{self.atlas_name}/*/manifest.json"
+        )
 
         available_versions: List[str] = [
             p.parent.name
@@ -162,7 +167,7 @@ class BrainGlobeVolume(core.Volume):
         latest_version = get_latest_version(available_versions)
 
         self._local_full_name = (
-            f"{V3_ATLAS_ROOTDIR}/"
+            f"{MANIFESTS_ROOTDIR}/"
             f"{self.atlas_name}/"
             f"{latest_version}/"
             f"manifest.json"
@@ -196,7 +201,9 @@ class BrainGlobeVolume(core.Volume):
         if not check_s3_status(raise_error=False):
             return None
 
-        bucket_path = remote_url_s3.format(f"atlases/{self.atlas_name}")
+        bucket_path = remote_url_s3.format(
+            f"{MANIFESTS_ROOTDIR}/{self.atlas_name}"
+        )
 
         if self.fs.exists(bucket_path) is False:
             if self.local_full_name is not None:
@@ -238,7 +245,7 @@ class BrainGlobeVolume(core.Volume):
 
         remote_version_str = _version_str_from_tuple(self.remote_version)
         key_name = (
-            f"{V3_ATLAS_ROOTDIR}/{self.atlas_name}/"
+            f"{MANIFESTS_ROOTDIR}/{self.atlas_name}/"
             f"{remote_version_str}/manifest.json"
         )
 
@@ -254,10 +261,7 @@ class BrainGlobeVolume(core.Volume):
         self.metadata = read_json(local_path)
 
         try:
-            if self.metadata.get(
-                "volumes_only",
-                self.metadata.get("additional_references_only", False),
-            ):
+            if self.metadata.get("volumes_only", False):
                 self._download_volumes()
                 self._local_full_name = None
                 return
@@ -408,7 +412,7 @@ class BrainGlobeVolume(core.Volume):
     def _download_volumes(self):
         """Download metadata for the volumes listed in the manifest."""
         volume_names = self.metadata.get(
-            "volumes", self.metadata.get("additional_references", [])
+            "volumes", []
         )
 
         for ref in volume_names:

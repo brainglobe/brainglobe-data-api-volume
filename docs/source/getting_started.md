@@ -20,13 +20,13 @@ rorb = dataset.volumes["rorb"]
 print(rorb.shape)
 ```
 
-`brainglobe_dir` is the parent of the `brainglobe-atlasapi` output directory.
+`brainglobe_dir` is the parent of the `brainglobe-data-api` output directory.
 Omit it when the dataset is in your configured BrainGlobe directory.
 `check_latest=False` skips online version checks for this local dataset.
 
 The wrapup writes a manifest under
-`brainglobe-atlasapi/atlases/carey_interactive_gene_mouse_25um/<version>/`
-and the gene volumes under `brainglobe-atlasapi/templates/`. The manifest lists
+`brainglobe-data-api/manifests/carey_interactive_gene_mouse_25um/<version>/`
+and the gene volumes under `brainglobe-data-api/volumes/`. The manifest lists
 which volumes belong to the dataset. Volume arrays load on first access.
 Volume keys are lowercase gene names, such as `rorb` and `sst`.
 

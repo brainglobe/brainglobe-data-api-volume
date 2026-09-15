@@ -21,6 +21,8 @@ from brainglobe_atlasapi.descriptors import (
 )
 from fsspec.callbacks import TqdmCallback
 
+from brainglobe_data_api_volume.descriptors import VOLUMES_ROOTDIR
+
 
 def check_requested_component(
     component_info: "ComponentInfo",
@@ -218,13 +220,13 @@ class TemplateInfo(ComponentInfo):
     ----------
     root_dir : str, optional
         The root directory for template components
-        (default is descriptors.V3_TEMPLATE_ROOTDIR).
+        (default is VOLUMES_ROOTDIR).
     file_name : str, optional
         The name of the template component file
         (default is descriptors.V3_TEMPLATE_NAME).
     """
 
-    root_dir: str = descriptors.V3_TEMPLATE_ROOTDIR
+    root_dir: str = VOLUMES_ROOTDIR
     file_name: str = descriptors.V3_TEMPLATE_NAME
 
 

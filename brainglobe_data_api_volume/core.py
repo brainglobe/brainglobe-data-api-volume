@@ -102,14 +102,9 @@ class Volume:
         atlas_path = Path(path)
         self.root_dir = atlas_path.parents[3]
         self.metadata = read_json(atlas_path)
-        if self.metadata.get(
-            "volumes_only",
-            self.metadata.get("additional_references_only", False),
-        ):
+        if self.metadata.get("volumes_only", False):
             self.volumes = VolumeDict(
-                volumes_list=self.metadata.get(
-                    "volumes", self.metadata.get("additional_references", [])
-                ),
+                volumes_list=self.metadata["volumes"],
                 data_path=self.root_dir,
                 resolution=self.resolution,
             )
@@ -189,7 +184,7 @@ class Volume:
 
         try:
             volumes = self.metadata.get(
-                "volumes", self.metadata.get("additional_references", [])
+                "volumes", []
             )
             self.volumes = VolumeDict(
                 volumes_list=volumes,
@@ -209,10 +204,7 @@ class Volume:
         self._lookup = None
 
     def _require_primary_components(self):
-        if self.metadata.get(
-            "volumes_only",
-            self.metadata.get("additional_references_only", False),
-        ):
+        if self.metadata.get("volumes_only", False):
             raise AttributeError(
                 "This dataset contains only volumes; "
                 "primary atlas components are unavailable."

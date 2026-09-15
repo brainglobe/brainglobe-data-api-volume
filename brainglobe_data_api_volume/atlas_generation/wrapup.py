@@ -60,6 +60,10 @@ from brainglobe_data_api_volume.atlas_generation.atlas_packaging_data import (
     AtlasPackagingData,
     TemplateInfo,
 )
+from brainglobe_data_api_volume.descriptors import (
+    DATA_ROOTDIR,
+    MANIFESTS_ROOTDIR,
+)
 
 # This should be changed every time we make changes in the atlas
 # structure:
@@ -705,7 +709,7 @@ def _volume_manifest_path(
 ):
     return (
         working_dir
-        / descriptors.V3_ATLAS_ROOTDIR
+        / MANIFESTS_ROOTDIR
         / f"{atlas_name}_{resolution[0]:g}um"
         / atlas_version.replace(".", "_")
         / "manifest.json"
@@ -957,7 +961,7 @@ def wrapup_volume_from_data(
         dict of meshio-compatible mesh file paths in the form
         {struct_id: meshpath}
     working_dir : str | Path
-        Parent of the brainglobe-atlasapi component output directory.
+        Parent of the brainglobe-data-api output directory.
     atlas_packager : str or None
         Credit for those responsible for converting the atlas
         into the BrainGlobe format.
@@ -1004,7 +1008,7 @@ def wrapup_volume_from_data(
     if compress is not None:
         print("Warning: `compress` argument is deprecated and has no effect")
 
-    working_dir = Path(working_dir) / "brainglobe-atlasapi"
+    working_dir = Path(working_dir) / DATA_ROOTDIR
     atlas_version = f"{ATLAS_VERSION}.{atlas_minor_version}"
     if not volumes:
         return []

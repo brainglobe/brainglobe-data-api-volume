@@ -6,6 +6,10 @@ from typing import List, Tuple, TypeAlias
 import numpy as np
 import numpy.typing as npt
 
+DATA_ROOTDIR = "brainglobe-data-api"
+MANIFESTS_ROOTDIR = "manifests"
+VOLUMES_ROOTDIR = "volumes"
+
 # Base URL for the BrainGlobe atlas S3 bucket:
 remote_url_s3 = "s3://brainglobe/atlas/{}"
 remote_url_s3_http = "https://brainglobe.s3.us-west-2.amazonaws.com/atlas/{}"

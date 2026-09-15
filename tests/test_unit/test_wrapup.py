@@ -61,10 +61,10 @@ def test_only_volumes_are_written(export_args):
         assert tuple(image.scale.values()) == tuple(
             r / 1000 for r in resolution
         )
-    output_root = export_args["working_dir"] / "brainglobe-atlasapi"
+    output_root = export_args["working_dir"] / "brainglobe-data-api"
     assert set(output_root.iterdir()) == {
-        output_root / descriptors.V3_TEMPLATE_ROOTDIR,
-        output_root / descriptors.V3_ATLAS_ROOTDIR,
+        output_root / "volumes",
+        output_root / "manifests",
     }
     assert [p.name for p in paths[0].parents[1].parent.iterdir()] == [
         "test_mouse-gene-template"
@@ -134,5 +134,5 @@ def test_primary_components_are_not_fetched(export_args, monkeypatch):
 def test_empty_export_writes_nothing(export_args):
     export_args["volumes"] = {}
     assert wu.wrapup_volume_from_data(**export_args) == []
-    assert not (export_args["working_dir"] / "brainglobe-atlasapi").exists()
+    assert not (export_args["working_dir"] / "brainglobe-data-api").exists()
 
