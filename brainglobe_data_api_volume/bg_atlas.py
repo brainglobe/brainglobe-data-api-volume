@@ -11,7 +11,7 @@ from fsspec.callbacks import TqdmCallback
 from rich import print as rprint
 from rich.console import Console
 
-from brainglobe_atlasapi import config, core
+from brainglobe_atlasapi import config
 from brainglobe_atlasapi.atlas_name import AtlasName
 from brainglobe_atlasapi.descriptors import (
     V3_ANNOTATION_MAP_NAME,
@@ -30,6 +30,8 @@ from brainglobe_atlasapi.utils import (
     get_latest_version,
     read_json,
 )
+
+from brainglobe_data_api_volume import core
 
 
 def _version_tuple_from_str(version_str):
@@ -252,6 +254,11 @@ class BrainGlobeAtlas(core.Atlas):
         self.metadata = read_json(local_path)
 
         try:
+            if self.metadata.get("additional_references_only", False):
+                self._download_additional_references()
+                self._local_full_name = None
+                return
+
             # Download terminology file
             terminology_location = self.metadata["terminology"]["location"][1:]
             local_terminology_path = self.brainglobe_dir / terminology_location
@@ -385,30 +392,7 @@ class BrainGlobeAtlas(core.Atlas):
                     callback=TqdmCallback(),
                 )
 
-            additional_reference_names = self.metadata.get(
-                "additional_references", []
-            )
-
-            for ref in additional_reference_names:
-                template_location = ref["location"][1:]
-                local_template_path = self.brainglobe_dir / template_location
-
-                if not local_template_path.exists():
-                    root_metadata_path = (
-                        template_location + f"/{V3_TEMPLATE_NAME}/**/*.json"
-                    )
-                    remote_root_metadata_path = remote_url_s3.format(
-                        root_metadata_path
-                    )
-                    print(
-                        f"Downloading template metadata "
-                        f"for {self.metadata['template']['name']}:"
-                    )
-                    self.fs.get(
-                        remote_root_metadata_path,
-                        local_template_path / V3_TEMPLATE_NAME,
-                        callback=TqdmCallback(),
-                    )
+            self._download_additional_references()
             # Reset local_full_name to ensure it is updated with new location
             self._local_full_name = None
 
@@ -417,6 +401,30 @@ class BrainGlobeAtlas(core.Atlas):
             # download and retries rather than finding partial files.
             local_path.unlink(missing_ok=True)
             raise
+
+    def _download_additional_references(self):
+        """Download metadata for the references listed in the manifest."""
+        additional_reference_names = self.metadata.get(
+            "additional_references", []
+        )
+
+        for ref in additional_reference_names:
+            template_location = ref["location"][1:]
+            local_template_path = self.brainglobe_dir / template_location
+
+            if not local_template_path.exists():
+                root_metadata_path = (
+                    template_location + f"/{V3_TEMPLATE_NAME}/**/*.json"
+                )
+                remote_root_metadata_path = remote_url_s3.format(
+                    root_metadata_path
+                )
+                print(f"Downloading template metadata for {ref['name']}:")
+                self.fs.get(
+                    remote_root_metadata_path,
+                    local_template_path / V3_TEMPLATE_NAME,
+                    callback=TqdmCallback(),
+                )
 
     def check_latest_version(
         self, print_warning: bool = True

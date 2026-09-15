@@ -102,6 +102,23 @@ class Atlas:
         atlas_path = Path(path)
         self.root_dir = atlas_path.parents[3]
         self.metadata = read_json(atlas_path)
+        if self.metadata.get("additional_references_only", False):
+            self.additional_references = AdditionalRefDict(
+                references_list=self.metadata["additional_references"],
+                data_path=self.root_dir,
+                resolution=self.resolution,
+            )
+            self.space = AnatomicalSpace(
+                origin=self.orientation,
+                shape=self.shape,
+                resolution=self.resolution,
+            )
+            self.structures_list = []
+            self.structures = None
+            self._annotation = self._template = self._hemispheres = None
+            self._lookup = self._annotation_mapping = None
+            self._annotation_masks_pyramid_level = None
+            return
         structures_path = (
             self.root_dir
             / self.metadata["terminology"]["location"][1:]
@@ -123,6 +140,7 @@ class Atlas:
         self._template_pyramid_level = _determine_pyramid_level(
             multiscale, self.resolution
         )
+        self._require_primary_components()
         annotation_location = self.metadata["annotation_set"]["location"][1:]
         annotation_path = (
             self.root_dir / annotation_location / V3_ANNOTATION_NAME
@@ -185,6 +203,13 @@ class Atlas:
         self._hemispheres = None
         self._lookup = None
 
+    def _require_primary_components(self):
+        if self.metadata.get("additional_references_only", False):
+            raise AttributeError(
+                "This dataset contains only additional references; "
+                "primary atlas components are unavailable."
+            )
+
     @property
     def resolution(self):
         """Make resolution more accessible from class."""
@@ -192,6 +217,7 @@ class Atlas:
 
     @property
     def _annotation_masks_path(self) -> Path:
+        self._require_primary_components()
         annotation_location = self.metadata["annotation_set"]["location"][1:]
         return self.root_dir / annotation_location / V3_ANNOTATION_MASKS_NAME
 
@@ -213,11 +239,13 @@ class Atlas:
     @property
     def hierarchy(self):
         """Returns a Treelib.tree object with structures hierarchy."""
+        self._require_primary_components()
         return self.structures.tree
 
     @property
     def lookup_df(self):
         """Returns a dataframe with id, acronym and name for each structure."""
+        self._require_primary_components()
         if self._lookup is None:
             self._lookup = pd.DataFrame(
                 dict(
@@ -231,6 +259,7 @@ class Atlas:
     @property
     def template(self) -> npt.NDArray[REFERENCE_DTYPE]:
         """Return the template image data. Loads it if not already loaded."""
+        self._require_primary_components()
         if self._template is not None:
             return self._template
 
@@ -280,9 +309,11 @@ class Atlas:
     @property
     def annotation(self) -> npt.NDArray[ANNOTATION_DTYPE]:
         """Return the annotation image data. Loads it if not already loaded."""
+        self._require_primary_components()
         if self._annotation is not None:
             return self._annotation
 
+        self._require_primary_components()
         annotation_location = self.metadata["annotation_set"]["location"][1:]
         annotation_path = (
             self.root_dir / annotation_location / V3_ANNOTATION_NAME
@@ -322,6 +353,7 @@ class Atlas:
         If the reference has an odd number of voxels along the frontal axis,
         the middle plane is assigned to the left hemisphere.
         """
+        self._require_primary_components()
         if self._hemispheres is not None:
             return self._hemispheres
 

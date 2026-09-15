@@ -56,11 +56,9 @@ from numba.typed import Dict as TypedDict
 from tqdm import tqdm
 
 from brainglobe_data_api_volume.atlas_generation.atlas_packaging_data import (
-    AnnotationInfo,
+    AdditionalReferencesPackagingData,
     AtlasPackagingData,
-    CoordinateSpaceInfo,
     TemplateInfo,
-    TerminologyInfo,
 )
 
 # This should be changed every time we make changes in the atlas
@@ -671,7 +669,7 @@ def _insert_into_4d_masks(
 
 
 def _save_additional_references(
-    packaging_data: AtlasPackagingData,
+    packaging_data: AtlasPackagingData | AdditionalReferencesPackagingData,
     transformations: List[List[dict]],
 ) -> None:
     for ref_tuple in packaging_data.additional_references:
@@ -700,6 +698,94 @@ def _save_additional_references(
                 new_data=additional_template,
                 working_dir=local_target_path,
             )
+
+
+def _reference_manifest_path(
+    working_dir, atlas_name, atlas_version, resolution
+):
+    return (
+        working_dir
+        / descriptors.V3_ATLAS_ROOTDIR
+        / f"{atlas_name}_{resolution[0]:g}um"
+        / atlas_version.replace(".", "_")
+        / "manifest.json"
+    )
+
+
+def _save_reference_manifests(
+    working_dir,
+    atlas_name,
+    atlas_version,
+    resolutions,
+    references,
+    citation,
+    atlas_link,
+    species,
+    atlas_packager=None,
+    additional_metadata=None,
+    overwrite=False,
+):
+    """Register saved references as a named dataset."""
+    reference_metadata = [
+        {
+            **ref.metadata,
+            "name": ref.name.removeprefix(f"{atlas_name}-")
+            .removesuffix("-template")
+            .lower(),
+        }
+        for ref in references
+    ]
+    names = [ref["name"] for ref in reference_metadata]
+    if len(set(names)) != len(names):
+        raise ValueError("Reference names must be unique after lowercasing")
+    multiscales = [
+        nz.from_ngff_zarr(working_dir / ref.stub) for ref in references
+    ]
+    manifests = {}
+    for resolution in resolutions:
+        shapes = []
+        for multiscale in multiscales:
+            matches = [
+                im
+                for im in multiscale.images
+                if np.allclose(
+                    [im.scale[dim] * 1000 for dim in im.dims], resolution
+                )
+            ]
+            if len(matches) != 1:
+                raise ValueError(
+                    f"Expected one reference level at {resolution} um"
+                )
+            shapes.append(tuple(matches[0].data.shape))
+        if not shapes or len(set(shapes)) != 1:
+            raise ValueError(
+                "References must have matching shapes per resolution"
+            )
+        path = _reference_manifest_path(
+            working_dir, atlas_name, atlas_version, resolution
+        )
+        if path.exists() and not overwrite:
+            raise FileExistsError(f"Atlas manifest already exists: {path}")
+        manifests[path] = {
+            **(additional_metadata or {}),
+            "name": atlas_name,
+            "location": "/" + path.parent.relative_to(working_dir).as_posix(),
+            "version": atlas_version,
+            "citation": citation,
+            "atlas_link": atlas_link,
+            "species": species,
+            "atlas_packager": atlas_packager,
+            "orientation": descriptors.ATLAS_ORIENTATION,
+            "resolution": list(resolution),
+            "shape": list(shapes[0]),
+            "symmetric": None,
+            "additional_references_only": True,
+            "additional_references": reference_metadata,
+        }
+    for path, metadata in manifests.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(metadata, indent=4) + "\n")
+    return list(manifests)
 
 
 def _finalize_atlas_at_resolution(
@@ -827,10 +913,10 @@ def wrapup_atlas_from_data(
     Export additional references as OME-Zarr components.
 
     Primary template, annotation, terminology, and coordinate-space components
-    are not written or fetched. Their input data are still required for
-    AtlasPackagingData preparation. No atlas manifest or full-atlas validation
-    is produced. Atlas-only options such as scale_meshes, resolution_mapping,
-    and additional_metadata have no effect on the exported references.
+    are not written or fetched. Their input arguments are retained for call
+    compatibility and may be None. A manifest registers the references for
+    loading with BrainGlobeAtlas. Full-atlas validation is skipped.
+    Atlas-only options such as scale_meshes and resolution_mapping are unused.
 
     Parameters
     ----------
@@ -885,7 +971,7 @@ def wrapup_atlas_from_data(
     additional_references: List[Tuple[Dict | str, ValidComponentData]] | Dict[str, ValidComponentData] | None
         List of tuples containing metadata and arrays for secondary templates.
     additional_metadata: dict, optional
-        Retained for call compatibility; no atlas manifest is written.
+        Extra metadata included in each dataset manifest.
     overwrite : bool, optional
         (Default value = False).
         If True, replace existing additional-reference component directories.
@@ -917,29 +1003,15 @@ def wrapup_atlas_from_data(
     if not additional_references:
         return []
 
-    if template_info is None:
-        template_info = {
-            "name": f"{atlas_name}-template",
-            "version": atlas_version,
-        }
-
-    if terminology_info is None:
-        terminology_info = {
-            "name": f"{atlas_name}-terminology",
-            "version": atlas_version,
-        }
-
-    if annotation_info is None:
-        annotation_info = {
-            "name": f"{atlas_name}-annotation",
-            "version": atlas_version,
-        }
-
-    if coordinate_space_info is None:
-        coordinate_space_info = {
-            "name": f"{atlas_name}-space",
-            "version": atlas_version,
-        }
+    resolutions = [resolution] if isinstance(resolution, tuple) else resolution
+    for res in resolutions:
+        manifest_path = _reference_manifest_path(
+            working_dir, atlas_name, atlas_version, res
+        )
+        if manifest_path.exists() and not overwrite:
+            raise FileExistsError(
+                f"Atlas manifest already exists: {manifest_path}"
+            )
 
     additional_template_list = []
     if additional_references is not None:
@@ -962,17 +1034,6 @@ def wrapup_atlas_from_data(
             component_info = TemplateInfo(**ref_dict)
             additional_template_list.append((component_info, ref_tuple[1]))
 
-    template_info = TemplateInfo(**template_info)
-    terminology_info = TerminologyInfo(**terminology_info)
-    annotation_info = AnnotationInfo(
-        template=template_info, terminology=terminology_info, **annotation_info
-    )
-    coordinate_space_info = CoordinateSpaceInfo(
-        template=template_info, **coordinate_space_info
-    )
-
-    additional_metadata = additional_metadata or {}
-
     for component_info, _ in additional_template_list:
         if component_info.use_existing:
             continue
@@ -994,29 +1055,11 @@ def wrapup_atlas_from_data(
                 "Try setting overwrite=True"
             )
 
-    packaging_data = AtlasPackagingData(
-        atlas_name=atlas_name,
-        atlas_version=atlas_version,
-        citation=citation,
-        atlas_link=atlas_link,
-        species=species,
+    packaging_data = AdditionalReferencesPackagingData(
         resolution=resolution,
         orientation=orientation,
-        root_id=root_id,
-        reference_stack=reference_stack,
-        annotation_stack=annotation_stack,
         working_dir=working_dir,
-        template_info=template_info,
-        annotation_info=annotation_info,
-        terminology_info=terminology_info,
-        coordinate_space_info=coordinate_space_info,
-        structures_list=structures_list,
-        meshes_dict=meshes_dict,
-        atlas_packager=atlas_packager,
-        hemispheres_stack=hemispheres_stack,
         additional_references=additional_template_list,
-        additional_metadata=additional_metadata,
-        fetch_primary_components=False,
     )
 
     transformations = _transformations_from_scales(
@@ -1026,6 +1069,20 @@ def wrapup_atlas_from_data(
     _save_additional_references(
         packaging_data,
         transformations,
+    )
+
+    _save_reference_manifests(
+        working_dir=working_dir,
+        atlas_name=atlas_name,
+        atlas_version=atlas_version,
+        resolutions=packaging_data.resolution,
+        references=[info for info, _ in packaging_data.additional_references],
+        citation=citation,
+        atlas_link=atlas_link,
+        species=species,
+        atlas_packager=atlas_packager,
+        additional_metadata=additional_metadata,
+        overwrite=overwrite,
     )
 
     return [
