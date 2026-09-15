@@ -30,7 +30,9 @@ and the gene volumes under `brainglobe-data-api/volumes/`. The manifest lists
 which volumes belong to the dataset. Volume arrays load on first access.
 The packaging script converts names to ASCII and lowercases them at discovery:
 `Rórb.nii.gz` becomes `rorb`. Wrapup requires lowercase ASCII names and uses
-them unchanged for volume directories and lookup keys.
+them unchanged for lookup keys. Volume directories include the dataset name,
+such as `volumes/carey_interactive_gene_mouse-rorb/<version>/`, so datasets
+can contain volumes with the same name.
 Normalization uses Python's standard library for accents, full-width letters,
 and Unicode dashes. Other non-ASCII characters are rejected.
 

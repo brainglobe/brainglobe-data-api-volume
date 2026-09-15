@@ -970,6 +970,8 @@ def wrapup_volume_from_data(
         List of tuples containing metadata and arrays for volumes.
         Volume names must already be lowercase and contain only ASCII
         characters.
+        Storage directories are named <atlas_name>-<volume_name>; manifest
+        names and lookup keys retain the supplied volume name.
         Pass TIFF or NIfTI paths to load and write one volume at a time.
         For multiple resolutions, pass a list of paths for each volume.
     additional_metadata: dict, optional
@@ -1042,7 +1044,10 @@ def wrapup_volume_from_data(
                 raise ValueError(
                     f"Volume name must be lowercase: {ref_dict['name']!r}"
                 )
-            component_info = TemplateInfo(**ref_dict)
+            component_info = TemplateInfo(
+                **{**ref_dict, "name": f"{atlas_name}-{ref_dict['name']}"}
+            )
+            component_info.metadata["name"] = ref_dict["name"]
             volume_list.append((component_info, ref_tuple[1]))
 
     for component_info, _ in volume_list:
