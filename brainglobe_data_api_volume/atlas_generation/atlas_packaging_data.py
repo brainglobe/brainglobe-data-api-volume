@@ -8,7 +8,6 @@ import brainglobe_space as bgs
 import numpy as np
 import numpy.typing as npt
 import s3fs
-import tifffile
 from brainglobe_atlasapi import descriptors
 from brainglobe_atlasapi.atlas_generation.structures import (
     check_struct_consistency,
@@ -20,6 +19,7 @@ from brainglobe_atlasapi.descriptors import (
     ValidComponentData,
 )
 from fsspec.callbacks import TqdmCallback
+from brainglobe_utils.IO.image import load_any
 
 from brainglobe_data_api_volume.descriptors import VOLUMES_ROOTDIR
 
@@ -369,11 +369,11 @@ class AtlasPackagingData:
         Id of the root element of the atlas.
     reference_stack : ValidComponentData
         Reference stack for the atlas. If str or Path, will be read with
-        tifffile. If list, should be ordered from highest to lowest
+        load_any. If list, should be ordered from highest to lowest
         resolution.
     annotation_stack : ValidComponentData
         Annotation stack for the atlas. If str or Path, will be read with
-        tifffile. If list, should be ordered from highest to lowest
+        load_any. If list, should be ordered from highest to lowest
         resolution.
     structures_list : List[Dict]
         List of valid dictionaries for structures.
@@ -549,12 +549,12 @@ def _load_stack(
     stack: ValidComponentData,
 ) -> List[npt.NDArray]:
     if isinstance(stack, (str, Path)):
-        return [tifffile.imread(stack)]
+        return [load_any(stack, as_numpy=True)]
     elif isinstance(stack, list):
         output = []
         for s in stack:
             if isinstance(s, (str, Path)):
-                output.append(tifffile.imread(s))
+                output.append(load_any(s, as_numpy=True))
             elif isinstance(s, np.ndarray):
                 output.append(s)
             else:

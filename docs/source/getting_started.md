@@ -28,7 +28,10 @@ The wrapup writes a manifest under
 `brainglobe-data-api/manifests/carey_interactive_gene_mouse_25um/<version>/`
 and the gene volumes under `brainglobe-data-api/volumes/`. The manifest lists
 which volumes belong to the dataset. Volume arrays load on first access.
-Volume keys are lowercase gene names, such as `rorb` and `sst`.
+The packaging script lowercases names at discovery: `Rorb.nii.gz` becomes
+`rorb`. Wrapup requires lowercase names and uses them unchanged for volume
+directories and lookup keys.
+
 
 Pass `atlas_space="allen_mouse_25um"` to `wrapup_volume_from_data` to record the
 BrainGlobe atlas the dataset is registered to. Read it from

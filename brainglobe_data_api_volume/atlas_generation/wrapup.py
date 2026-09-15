@@ -1,5 +1,6 @@
 """Tools to finalise the atlas creation process."""
 
+import gc
 import json
 import shutil
 from pathlib import Path
@@ -731,25 +732,15 @@ def _save_volume_manifests(
     atlas_space: str | None = None,
 ):
     """Register saved volumes as a named dataset."""
-    volume_metadata = [
-        {
-            **ref.metadata,
-            "name": ref.name.removeprefix(f"{atlas_name}-")
-            .removesuffix("-template")
-            .lower(),
-        }
-        for ref in volumes
-    ]
+    volume_metadata = [ref.metadata for ref in volumes]
     names = [ref["name"] for ref in volume_metadata]
     if len(set(names)) != len(names):
-        raise ValueError("Volume names must be unique after lowercasing")
-    multiscales = [
-        nz.from_ngff_zarr(working_dir / ref.stub) for ref in volumes
-    ]
+        raise ValueError("Volume names must be unique")
     manifests = {}
     for resolution in resolutions:
         shapes = []
-        for multiscale in multiscales:
+        for ref in volumes:
+            multiscale = nz.from_ngff_zarr(working_dir / ref.stub)
             matches = [
                 im
                 for im in multiscale.images
@@ -947,12 +938,12 @@ def wrapup_volume_from_data(
         Id of the root element of the atlas.
     reference_stack : ValidComponentData
         Reference stack for the atlas.
-        If str or Path, will be read with tifffile.
+        If str or Path, will be read with load_any.
         If list, should be list of stacks for each scale, ordered from highest
         to lowest resolution.
     annotation_stack : ValidComponentData
         Annotation stack for the atlas.
-        If str or Path, will be read with tifffile.
+        If str or Path, will be read with load_any.
         If list, should be list of stacks for each scale, ordered from highest
         to lowest resolution.
     structures_list : List[Dict]
@@ -967,7 +958,7 @@ def wrapup_volume_from_data(
         into the BrainGlobe format.
     hemispheres_stack : ValidComponentData | None, optional
         Hemisphere stack for the atlas.
-        If str or Path, will be read with tifffile.
+        If str or Path, will be read with load_any.
         If list, should be list of stacks for each scale, ordered from highest
         to lowest resolution.
         If none is provided, atlas is assumed to be symmetric.
@@ -977,6 +968,9 @@ def wrapup_volume_from_data(
         Retained for call compatibility; unused for volume exports.
     volumes: List[Tuple[Dict | str, ValidComponentData]] | Dict[str, ValidComponentData] | None
         List of tuples containing metadata and arrays for volumes.
+        Volume names must already be lowercase.
+        Pass TIFF or NIfTI paths to load and write one volume at a time.
+        For multiple resolutions, pass a list of paths for each volume.
     additional_metadata: dict, optional
         Extra metadata included in each dataset manifest.
     overwrite : bool, optional
@@ -1031,9 +1025,6 @@ def wrapup_volume_from_data(
         for ref_tuple in volumes:
             ref_metadata, _ = ref_tuple
             if isinstance(ref_metadata, str):
-                if not ref_metadata.endswith("-template"):
-                    ref_metadata = f"{atlas_name}-{ref_metadata}-template"
-
                 ref_dict = {
                     "name": ref_metadata,
                     "version": atlas_version,
@@ -1041,6 +1032,10 @@ def wrapup_volume_from_data(
             else:
                 ref_dict = ref_metadata
 
+            if ref_dict["name"] != ref_dict["name"].lower():
+                raise ValueError(
+                    f"Volume name must be lowercase: {ref_dict['name']!r}"
+                )
             component_info = TemplateInfo(**ref_dict)
             volume_list.append((component_info, ref_tuple[1]))
 
@@ -1065,28 +1060,27 @@ def wrapup_volume_from_data(
                 "Try setting overwrite=True"
             )
 
-    packaging_data = VolumePackagingData(
-        resolution=resolution,
-        orientation=orientation,
-        working_dir=working_dir,
-        volumes=volume_list,
-    )
-
     transformations = _transformations_from_scales(
-        [[res / 1000 for res in t] for t in packaging_data.resolution]
+        [[res / 1000 for res in t] for t in resolutions]
     )
 
-    _save_volumes(
-        packaging_data,
-        transformations,
-    )
+    for volume in volume_list:
+        packaging_data = VolumePackagingData(
+            resolution=resolution,
+            orientation=orientation,
+            working_dir=working_dir,
+            volumes=[volume],
+        )
+        _save_volumes(packaging_data, transformations)
+        del packaging_data
+        gc.collect()
 
     _save_volume_manifests(
         working_dir=working_dir,
         atlas_name=atlas_name,
         atlas_version=atlas_version,
-        resolutions=packaging_data.resolution,
-        volumes=[info for info, _ in packaging_data.volumes],
+        resolutions=resolutions,
+        volumes=[info for info, _ in volume_list],
         citation=citation,
         atlas_link=atlas_link,
         species=species,
@@ -1098,5 +1092,5 @@ def wrapup_volume_from_data(
 
     return [
         working_dir / ref_info.stub
-        for ref_info, _ in packaging_data.volumes
+        for ref_info, _ in volume_list
     ]

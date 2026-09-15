@@ -7,7 +7,6 @@ filling in the required functions and metadata.
 from pathlib import Path
 
 import pooch
-from brainglobe_utils.IO.image import load_any
 
 from brainglobe_data_api_volume.atlas_generation.wrapup import (
     wrapup_volume_from_data,
@@ -177,10 +176,10 @@ def retrieve_or_construct_meshes():
 
 
 def retrieve_volumes(gene: str | None = None):
-    """Load cached NIfTI volumes, named by their source gene filenames.
+    """List cached NIfTI paths, named by their source gene filenames.
 
-    If gene is provided, load only that gene (for example, "Sst").
-    Source names are preserved; no Ensembl ID mapping is applied.
+    If gene is provided, select only that gene (for example, "Sst").
+    Names are lowercased; no Ensembl ID mapping is applied.
     """
     source_dir = BG_ROOT_DIR / "gene_volumes"
     existing_files = sorted(source_dir.rglob("*.nii.gz"))
@@ -194,10 +193,10 @@ def retrieve_volumes(gene: str | None = None):
             raise FileNotFoundError(f"No cached volume for {gene!r}")
     volumes = {}
     for file in existing_files:
-        reference_name = file.name.removesuffix(".nii.gz")
+        reference_name = file.name.removesuffix(".nii.gz").lower()
         if reference_name in volumes:
             raise ValueError(f"Duplicate gene volume: {reference_name}")
-        volumes[reference_name] = load_any(file, as_numpy=True)
+        volumes[reference_name] = file
     return volumes
 
 

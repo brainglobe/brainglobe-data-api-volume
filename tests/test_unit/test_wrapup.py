@@ -67,7 +67,7 @@ def test_only_volumes_are_written(export_args):
         output_root / "manifests",
     }
     assert [p.name for p in paths[0].parents[1].parent.iterdir()] == [
-        "test_mouse-gene-template"
+        "gene"
     ]
 
 
@@ -128,7 +128,7 @@ def test_primary_components_are_not_fetched(export_args, monkeypatch):
             use_existing=True,
         )
     wu.wrapup_volume_from_data(**export_args)
-    assert requested == ["test_mouse-gene-template"]
+    assert requested == ["gene"]
 
 
 def test_empty_export_writes_nothing(export_args):
