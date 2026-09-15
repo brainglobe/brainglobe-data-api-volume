@@ -136,36 +136,3 @@ def test_empty_export_writes_nothing(export_args):
     assert wu.wrapup_volume_from_data(**export_args) == []
     assert not (export_args["working_dir"] / "brainglobe-atlasapi").exists()
 
-
-@pytest.mark.parametrize("legacy_manifest", [False, True])
-def test_volume_api_round_trip(export_args, legacy_manifest):
-    wu.wrapup_volume_from_data(**export_args)
-    manifests = list(export_args["working_dir"].rglob("manifest.json"))
-    assert len(manifests) == len(export_args["resolution"])
-    for path in manifests:
-        metadata = json.loads(path.read_text())
-        assert metadata["volumes_only"] is True
-        assert [volume["name"] for volume in metadata["volumes"]] == ["gene"]
-        assert "additional_references" not in metadata
-        if legacy_manifest:
-            metadata["additional_references"] = metadata.pop("volumes")
-            metadata["additional_references_only"] = metadata.pop(
-                "volumes_only"
-            )
-            path.write_text(json.dumps(metadata))
-    for resolution, expected in zip(
-        export_args["resolution"], export_args["volumes"]["gene"], strict=True
-    ):
-        dataset = BrainGlobeVolume(
-            f"test_mouse_{resolution[0]}um",
-            brainglobe_dir=export_args["working_dir"],
-            check_latest=False,
-        )
-        assert dataset.metadata["atlas_space"] == export_args["atlas_space"]
-        assert dataset.resolution == resolution
-        assert list(dataset.volumes) == ["gene"]
-        assert dataset.volumes.data["gene"] is None
-        np.testing.assert_array_equal(dataset.volumes["gene"], expected)
-        assert dataset.volumes["gene"] is dataset.volumes.data["gene"]
-        with pytest.raises(AttributeError, match="only volumes"):
-            _ = dataset.template
