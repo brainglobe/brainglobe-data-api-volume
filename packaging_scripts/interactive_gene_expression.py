@@ -10,7 +10,7 @@ import pooch
 from brainglobe_utils.IO.image import load_any
 
 from brainglobe_data_api_volume.atlas_generation.wrapup import (
-    wrapup_atlas_from_data,
+    wrapup_volume_from_data,
 )
 
 # Copy-paste this script into a new file and fill in the functions to package
@@ -176,7 +176,7 @@ def retrieve_or_construct_meshes():
     return meshes_dict
 
 
-def retrieve_additional_references(gene: str | None = None):
+def retrieve_volumes(gene: str | None = None):
     """Load cached NIfTI volumes, named by their source gene filenames.
 
     If gene is provided, load only that gene (for example, "Sst").
@@ -192,13 +192,13 @@ def retrieve_additional_references(gene: str | None = None):
         ]
         if not existing_files:
             raise FileNotFoundError(f"No cached volume for {gene!r}")
-    additional_references = {}
+    volumes = {}
     for file in existing_files:
         reference_name = file.name.removesuffix(".nii.gz")
-        if reference_name in additional_references:
+        if reference_name in volumes:
             raise ValueError(f"Duplicate gene volume: {reference_name}")
-        additional_references[reference_name] = load_any(file, as_numpy=True)
-    return additional_references
+        volumes[reference_name] = load_any(file, as_numpy=True)
+    return volumes
 
 
 ### If the code above this line has been filled correctly, nothing needs to be
@@ -212,12 +212,12 @@ if __name__ == "__main__":
 
     download_resources()
     reference_volume, annotated_volume = retrieve_reference_and_annotation()
-    additional_references = retrieve_additional_references(GENE_TO_PACKAGE)
+    volumes = retrieve_volumes(GENE_TO_PACKAGE)
     hemispheres_stack = retrieve_hemisphere_map()
     structures = retrieve_structure_information()
     meshes_dict = retrieve_or_construct_meshes()
 
-    output_paths = wrapup_atlas_from_data(
+    output_paths = wrapup_volume_from_data(
         atlas_name=ATLAS_NAME,
         atlas_space=ATLAS_SPACE,
         atlas_minor_version=__version__,
@@ -233,7 +233,7 @@ if __name__ == "__main__":
         meshes_dict=meshes_dict,
         working_dir=bg_root_dir,
         hemispheres_stack=None,
-        additional_references=additional_references,
+        volumes=volumes,
         overwrite=True,
     )
 

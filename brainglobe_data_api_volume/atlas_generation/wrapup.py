@@ -56,7 +56,7 @@ from numba.typed import Dict as TypedDict
 from tqdm import tqdm
 
 from brainglobe_data_api_volume.atlas_generation.atlas_packaging_data import (
-    AdditionalReferencesPackagingData,
+    VolumePackagingData,
     AtlasPackagingData,
     TemplateInfo,
 )
@@ -668,11 +668,11 @@ def _insert_into_4d_masks(
         shutil.rmtree(scratch_dir, ignore_errors=True)
 
 
-def _save_additional_references(
-    packaging_data: AtlasPackagingData | AdditionalReferencesPackagingData,
+def _save_volumes(
+    packaging_data: VolumePackagingData,
     transformations: List[List[dict]],
 ) -> None:
-    for ref_tuple in packaging_data.additional_references:
+    for ref_tuple in packaging_data.volumes:
         ref_info, additional_template = ref_tuple
 
         if not ref_info.use_existing and not ref_info.update_existing:
@@ -700,7 +700,7 @@ def _save_additional_references(
             )
 
 
-def _reference_manifest_path(
+def _volume_manifest_path(
     working_dir, atlas_name, atlas_version, resolution
 ):
     return (
@@ -712,12 +712,12 @@ def _reference_manifest_path(
     )
 
 
-def _save_reference_manifests(
+def _save_volume_manifests(
     working_dir,
     atlas_name,
     atlas_version,
     resolutions,
-    references,
+    volumes,
     citation,
     atlas_link,
     species,
@@ -726,21 +726,21 @@ def _save_reference_manifests(
     overwrite=False,
     atlas_space: str | None = None,
 ):
-    """Register saved references as a named dataset."""
-    reference_metadata = [
+    """Register saved volumes as a named dataset."""
+    volume_metadata = [
         {
             **ref.metadata,
             "name": ref.name.removeprefix(f"{atlas_name}-")
             .removesuffix("-template")
             .lower(),
         }
-        for ref in references
+        for ref in volumes
     ]
-    names = [ref["name"] for ref in reference_metadata]
+    names = [ref["name"] for ref in volume_metadata]
     if len(set(names)) != len(names):
-        raise ValueError("Reference names must be unique after lowercasing")
+        raise ValueError("Volume names must be unique after lowercasing")
     multiscales = [
-        nz.from_ngff_zarr(working_dir / ref.stub) for ref in references
+        nz.from_ngff_zarr(working_dir / ref.stub) for ref in volumes
     ]
     manifests = {}
     for resolution in resolutions:
@@ -755,14 +755,14 @@ def _save_reference_manifests(
             ]
             if len(matches) != 1:
                 raise ValueError(
-                    f"Expected one reference level at {resolution} um"
+                    f"Expected one volume level at {resolution} um"
                 )
             shapes.append(tuple(matches[0].data.shape))
         if not shapes or len(set(shapes)) != 1:
             raise ValueError(
-                "References must have matching shapes per resolution"
+                "Volumes must have matching shapes per resolution"
             )
-        path = _reference_manifest_path(
+        path = _volume_manifest_path(
             working_dir, atlas_name, atlas_version, resolution
         )
         if path.exists() and not overwrite:
@@ -781,8 +781,8 @@ def _save_reference_manifests(
             "resolution": list(resolution),
             "shape": list(shapes[0]),
             "symmetric": None,
-            "additional_references_only": True,
-            "additional_references": reference_metadata,
+            "volumes_only": True,
+            "volumes": volume_metadata,
         }
     for path, metadata in manifests.items():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -874,7 +874,7 @@ def _finalize_atlas_at_resolution(
     return atlas_dir
 
 
-def wrapup_atlas_from_data(
+def wrapup_volume_from_data(
     atlas_name: str,
     atlas_minor_version: int | str,
     citation: str,
@@ -896,7 +896,7 @@ def wrapup_atlas_from_data(
     coordinate_space_info: Dict[str, str | bool] | None = None,
     scale_meshes=False,
     resolution_mapping=None,
-    additional_references: (
+    volumes: (
         List[
             Tuple[
                 Dict | str,
@@ -913,12 +913,12 @@ def wrapup_atlas_from_data(
     atlas_space: str | None = None,
 ) -> List[Path]:
     """
-    Export additional references as OME-Zarr components.
+    Export volumes as OME-Zarr components.
 
     Primary template, annotation, terminology, and coordinate-space components
     are not written or fetched. Their input arguments are retained for call
-    compatibility and may be None. A manifest registers the references for
-    loading with BrainGlobeAtlas. Full-atlas validation is skipped.
+    compatibility and may be None. A manifest registers the volumes for
+    loading with BrainGlobeVolume. Full-atlas validation is skipped.
     Atlas-only options such as scale_meshes and resolution_mapping are unused.
 
     Parameters
@@ -968,18 +968,18 @@ def wrapup_atlas_from_data(
         to lowest resolution.
         If none is provided, atlas is assumed to be symmetric.
     scale_meshes: bool, optional
-        Retained for call compatibility; unused for reference-only exports.
+        Retained for call compatibility; unused for volume exports.
     resolution_mapping: List[int], optional
-        Retained for call compatibility; unused for reference-only exports.
-    additional_references: List[Tuple[Dict | str, ValidComponentData]] | Dict[str, ValidComponentData] | None
-        List of tuples containing metadata and arrays for secondary templates.
+        Retained for call compatibility; unused for volume exports.
+    volumes: List[Tuple[Dict | str, ValidComponentData]] | Dict[str, ValidComponentData] | None
+        List of tuples containing metadata and arrays for volumes.
     additional_metadata: dict, optional
         Extra metadata included in each dataset manifest.
     overwrite : bool, optional
         (Default value = False).
-        If True, replace existing additional-reference component directories.
-        If False and a reference output exists, raise FileExistsError.
-        References marked use_existing are reused without deletion.
+        If True, replace existing volume component directories.
+        If False and a volume output exists, raise FileExistsError.
+        Volumes marked use_existing are reused without deletion.
     cleanup_files : deprecated, optional
         (Default value = None).
         Deprecated and has no effect.
@@ -993,8 +993,8 @@ def wrapup_atlas_from_data(
     Returns
     -------
     List[Path]
-        OME-Zarr paths for the additional references, in input order.
-        An empty reference collection returns an empty list without writing.
+        OME-Zarr paths for the volumes, in input order.
+        An empty volume collection returns an empty list without writing.
     """  # noqa: E501
     if cleanup_files is not None:
         print(
@@ -1006,12 +1006,12 @@ def wrapup_atlas_from_data(
 
     working_dir = Path(working_dir) / "brainglobe-atlasapi"
     atlas_version = f"{ATLAS_VERSION}.{atlas_minor_version}"
-    if not additional_references:
+    if not volumes:
         return []
 
     resolutions = [resolution] if isinstance(resolution, tuple) else resolution
     for res in resolutions:
-        manifest_path = _reference_manifest_path(
+        manifest_path = _volume_manifest_path(
             working_dir, atlas_name, atlas_version, res
         )
         if manifest_path.exists() and not overwrite:
@@ -1019,12 +1019,12 @@ def wrapup_atlas_from_data(
                 f"Atlas manifest already exists: {manifest_path}"
             )
 
-    additional_template_list = []
-    if additional_references is not None:
-        if isinstance(additional_references, dict):
-            additional_references = list(additional_references.items())
+    volume_list = []
+    if volumes is not None:
+        if isinstance(volumes, dict):
+            volumes = list(volumes.items())
 
-        for ref_tuple in additional_references:
+        for ref_tuple in volumes:
             ref_metadata, _ = ref_tuple
             if isinstance(ref_metadata, str):
                 if not ref_metadata.endswith("-template"):
@@ -1038,9 +1038,9 @@ def wrapup_atlas_from_data(
                 ref_dict = ref_metadata
 
             component_info = TemplateInfo(**ref_dict)
-            additional_template_list.append((component_info, ref_tuple[1]))
+            volume_list.append((component_info, ref_tuple[1]))
 
-    for component_info, _ in additional_template_list:
+    for component_info, _ in volume_list:
         if component_info.use_existing:
             continue
         component_dir = (
@@ -1061,28 +1061,28 @@ def wrapup_atlas_from_data(
                 "Try setting overwrite=True"
             )
 
-    packaging_data = AdditionalReferencesPackagingData(
+    packaging_data = VolumePackagingData(
         resolution=resolution,
         orientation=orientation,
         working_dir=working_dir,
-        additional_references=additional_template_list,
+        volumes=volume_list,
     )
 
     transformations = _transformations_from_scales(
         [[res / 1000 for res in t] for t in packaging_data.resolution]
     )
 
-    _save_additional_references(
+    _save_volumes(
         packaging_data,
         transformations,
     )
 
-    _save_reference_manifests(
+    _save_volume_manifests(
         working_dir=working_dir,
         atlas_name=atlas_name,
         atlas_version=atlas_version,
         resolutions=packaging_data.resolution,
-        references=[info for info, _ in packaging_data.additional_references],
+        volumes=[info for info, _ in packaging_data.volumes],
         citation=citation,
         atlas_link=atlas_link,
         species=species,
@@ -1094,5 +1094,5 @@ def wrapup_atlas_from_data(
 
     return [
         working_dir / ref_info.stub
-        for ref_info, _ in packaging_data.additional_references
+        for ref_info, _ in packaging_data.volumes
     ]

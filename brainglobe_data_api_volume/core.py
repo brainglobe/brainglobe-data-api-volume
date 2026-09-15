@@ -1,4 +1,4 @@
-"""Module containing the core Atlas class."""
+"""Module containing the core Volume class."""
 
 import warnings
 from collections import UserDict, deque
@@ -82,8 +82,8 @@ def _determine_pyramid_level(
     raise ValueError(f"Requested resolution {resolution} um is invalid.")
 
 
-class Atlas:
-    """Base class to handle atlases in BrainGlobe.
+class Volume:
+    """Base class to handle volume datasets in BrainGlobe.
 
     Parameters
     ----------
@@ -102,9 +102,14 @@ class Atlas:
         atlas_path = Path(path)
         self.root_dir = atlas_path.parents[3]
         self.metadata = read_json(atlas_path)
-        if self.metadata.get("additional_references_only", False):
-            self.additional_references = AdditionalRefDict(
-                references_list=self.metadata["additional_references"],
+        if self.metadata.get(
+            "volumes_only",
+            self.metadata.get("additional_references_only", False),
+        ):
+            self.volumes = VolumeDict(
+                volumes_list=self.metadata.get(
+                    "volumes", self.metadata.get("additional_references", [])
+                ),
                 data_path=self.root_dir,
                 resolution=self.resolution,
             )
@@ -183,18 +188,18 @@ class Atlas:
         )
 
         try:
-            additional_references = self.metadata.get(
-                "additional_references", []
+            volumes = self.metadata.get(
+                "volumes", self.metadata.get("additional_references", [])
             )
-            self.additional_references = AdditionalRefDict(
-                references_list=additional_references,
+            self.volumes = VolumeDict(
+                volumes_list=volumes,
                 data_path=self.root_dir,
                 resolution=self.resolution,
             )
         except KeyError:
             warnings.warn(
                 "This atlas seems to be outdated as no "
-                "additional_references list "
+                "volumes list "
                 "is found in metadata!"
             )
 
@@ -204,9 +209,12 @@ class Atlas:
         self._lookup = None
 
     def _require_primary_components(self):
-        if self.metadata.get("additional_references_only", False):
+        if self.metadata.get(
+            "volumes_only",
+            self.metadata.get("additional_references_only", False),
+        ):
             raise AttributeError(
-                "This dataset contains only additional references; "
+                "This dataset contains only volumes; "
                 "primary atlas components are unavailable."
             )
 
@@ -647,7 +655,7 @@ class Atlas:
 
         Examples
         --------
-        >>> atlas = BrainGlobeAtlas("allen_mouse_25um")
+        >>> atlas = BrainGlobeVolume("allen_mouse_25um")
         >>> # Get all level-3 structures under cortex
         >>> ids = atlas.get_structures_at_hierarchy_level("CTX", 3)
         >>> # Get as acronyms instead
@@ -797,66 +805,66 @@ class Atlas:
         )
 
 
-class AdditionalRefDict(UserDict):
-    """Class implementing the lazy loading of secondary references
+class VolumeDict(UserDict):
+    """Class implementing the lazy loading of volumes
     if the dictionary is queried for it.
     """
 
     def __init__(
         self,
-        references_list: List[Dict[str, str]],
+        volumes_list: List[Dict[str, str]],
         data_path,
         resolution: Tuple[float, float, float],
         *args,
         **kwargs,
     ):
         self.data_path = data_path
-        self.references_names = [ref["name"] for ref in references_list]
-        self.references_dict = {ref["name"]: ref for ref in references_list}
+        self.volume_names = [ref["name"] for ref in volumes_list]
+        self.volumes_dict = {ref["name"]: ref for ref in volumes_list}
         self.resolution = resolution
 
         super().__init__(*args, **kwargs)
 
-        for ref_name in self.references_names:
-            self.data[ref_name] = None
+        for volume_name in self.volume_names:
+            self.data[volume_name] = None
 
     def __getitem__(self, key):
-        """Retrieve an item from the dictionary using the reference name
+        """Retrieve an item from the dictionary using the volume name
         as key.
 
-        If the reference image data for `ref_name` has not been loaded yet,
-        it will be read from the disk and cached. If `ref_name` is not
-        one of the predefined additional references, a warning is issued
+        If the volume image data for `volume_name` has not been loaded yet,
+        it will be read from the disk and cached. If `volume_name` is not
+        one of the predefined volumes, a warning is issued
         and None is returned.
 
         Parameters
         ----------
         key : str
-            The name of the reference image to retrieve (e.g., "aba").
+            The name of the volume image to retrieve (e.g., "aba").
 
         Returns
         -------
         np.ndarray or None
-            The image data associated with the reference name, or None if the
-            reference name is not found in the list of available references.
+            The image data associated with the volume name, or None if the
+            volume name is not found in the list of available volumes.
 
         Raises
         ------
-            KeyError: If the ref_name is not found.
+            KeyError: If the volume_name is not found.
         """
-        if key not in self.references_names:
+        if key not in self.volume_names:
             warnings.warn(
-                f"No reference named {key} "
-                f"(available: {self.references_names})"
+                f"No volume named {key} "
+                f"(available: {self.volume_names})"
             )
             return None
 
         if self.data[key] is None:
-            additional_ref_data = self.references_dict.get(key, key)
+            volume_data = self.volumes_dict.get(key, key)
 
-            additional_ref_location = additional_ref_data["location"][1:]
+            volume_location = volume_data["location"][1:]
             local_path: Path = (
-                self.data_path / additional_ref_location / V3_TEMPLATE_NAME
+                self.data_path / volume_location / V3_TEMPLATE_NAME
             )
 
             multiscale = nz.from_ngff_zarr(local_path)
@@ -868,9 +876,9 @@ class AdditionalRefDict(UserDict):
             resolution_path = local_path / dataset_path
 
             if not (resolution_path / "c").exists():
-                print("Downloading template...")
+                print("Downloading volume...")
                 remote_path = remote_url_s3.format(
-                    f"{additional_ref_location}/{V3_TEMPLATE_NAME}/{dataset_path}/"
+                    f"{volume_location}/{V3_TEMPLATE_NAME}/{dataset_path}/"
                 )
                 fs = s3fs.S3FileSystem(anon=True)
                 fs.get(

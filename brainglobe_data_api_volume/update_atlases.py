@@ -4,8 +4,8 @@ import shutil
 
 from rich import print as rprint
 
-from brainglobe_atlasapi.bg_atlas import (
-    BrainGlobeAtlas,
+from brainglobe_data_api_volume.bg_volume import (
+    BrainGlobeVolume,
     _version_str_from_tuple,
 )
 from brainglobe_atlasapi.list_atlases import get_downloaded_atlases
@@ -25,7 +25,7 @@ def update_atlas(atlas_name, force=False, fn_update=None):
     fn_update : Callable, Optional
         A callback function to update progress during download.
     """
-    atlas = BrainGlobeAtlas(
+    atlas = BrainGlobeVolume(
         atlas_name=atlas_name, check_latest=False, fn_update=fn_update
     )
 
@@ -95,4 +95,4 @@ def install_atlas(atlas_name, fn_update=None):
         return
 
     # Istantiate to download:
-    BrainGlobeAtlas(atlas_name, fn_update=fn_update)
+    BrainGlobeVolume(atlas_name, fn_update=fn_update)

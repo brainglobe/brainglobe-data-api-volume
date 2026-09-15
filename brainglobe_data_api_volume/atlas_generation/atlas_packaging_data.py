@@ -489,30 +489,30 @@ class AtlasPackagingData:
 
 
 @dataclass
-class AdditionalReferencesPackagingData:
-    """Prepare reference volumes without requiring primary atlas inputs."""
+class VolumePackagingData:
+    """Prepare volumes without requiring primary atlas inputs."""
 
     working_dir: Path
     resolution: Resolution | ResolutionList
     orientation: str
-    additional_references: List[Tuple[TemplateInfo, ValidComponentData]]
+    volumes: List[Tuple[TemplateInfo, ValidComponentData]]
 
     def __post_init__(self):
         self.resolution = _standardize_resolution(self.resolution)
-        for index, (info, data) in enumerate(self.additional_references):
+        for index, (info, data) in enumerate(self.volumes):
             stacks = _load_stack(data)
             if len(stacks) != len(self.resolution):
                 raise ValueError(
                     f"{info.name}: expected one stack per resolution"
                 )
             if any(stack.ndim != 3 for stack in stacks):
-                raise ValueError(f"{info.name}: reference stacks must be 3D")
+                raise ValueError(f"{info.name}: volume stacks must be 3D")
             volume_shape = tuple(
                 size * res
                 for size, res in zip(stacks[0].shape, self.resolution[0])
             )
             space = bgs.AnatomicalSpace(self.orientation, shape=volume_shape)
-            self.additional_references[index] = (
+            self.volumes[index] = (
                 info,
                 _reorient_stacks(stacks, space),
             )

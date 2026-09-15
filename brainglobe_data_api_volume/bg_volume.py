@@ -1,4 +1,4 @@
-"""Defines the BrainGlobe Atlas API V3 classes and functions."""
+"""Defines the BrainGlobe volume API classes and functions."""
 
 import re
 from collections.abc import Callable
@@ -42,9 +42,9 @@ def _version_str_from_tuple(version_tuple: Tuple[int, ...]) -> str:
     return "_".join(str(num) for num in version_tuple)
 
 
-class BrainGlobeAtlas(core.Atlas):
+class BrainGlobeVolume(core.Volume):
     """Add remote atlas fetching and version comparison functionalities
-    to the core Atlas class.
+    to the core Volume class.
 
     Parameters
     ----------
@@ -254,8 +254,11 @@ class BrainGlobeAtlas(core.Atlas):
         self.metadata = read_json(local_path)
 
         try:
-            if self.metadata.get("additional_references_only", False):
-                self._download_additional_references()
+            if self.metadata.get(
+                "volumes_only",
+                self.metadata.get("additional_references_only", False),
+            ):
+                self._download_volumes()
                 self._local_full_name = None
                 return
 
@@ -392,7 +395,7 @@ class BrainGlobeAtlas(core.Atlas):
                     callback=TqdmCallback(),
                 )
 
-            self._download_additional_references()
+            self._download_volumes()
             # Reset local_full_name to ensure it is updated with new location
             self._local_full_name = None
 
@@ -402,13 +405,13 @@ class BrainGlobeAtlas(core.Atlas):
             local_path.unlink(missing_ok=True)
             raise
 
-    def _download_additional_references(self):
-        """Download metadata for the references listed in the manifest."""
-        additional_reference_names = self.metadata.get(
-            "additional_references", []
+    def _download_volumes(self):
+        """Download metadata for the volumes listed in the manifest."""
+        volume_names = self.metadata.get(
+            "volumes", self.metadata.get("additional_references", [])
         )
 
-        for ref in additional_reference_names:
+        for ref in volume_names:
             template_location = ref["location"][1:]
             local_template_path = self.brainglobe_dir / template_location
 
