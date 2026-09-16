@@ -10,9 +10,19 @@ DATA_ROOTDIR = "brainglobe-data-api"
 MANIFESTS_ROOTDIR = "manifests"
 VOLUMES_ROOTDIR = "volumes"
 
-# Base URL for the BrainGlobe atlas S3 bucket:
+# Base URL for the BrainGlobe atlas S3 bucket. Atlas components shared
+# between datasets (templates, annotation sets, terminologies and coordinate
+# spaces) are served from here:
 remote_url_s3 = "s3://brainglobe/atlas/{}"
 remote_url_s3_http = "https://brainglobe.s3.us-west-2.amazonaws.com/atlas/{}"
+
+# Base URL for the volume data S3 bucket. Dataset manifests and the volumes
+# they list are served from here, under the same layout used locally by
+# DATA_ROOTDIR:
+remote_url_data_s3 = "s3://brainglobe/data/volume/{}"
+remote_url_data_s3_http = (
+    "https://brainglobe.s3.us-west-2.amazonaws.com/data/volume/{}"
+)
 
 # Major version of atlases used by current brainglobe-atlasapi release:
 ATLAS_MAJOR_V = 0

@@ -1,42 +1,28 @@
 """Module containing the core Volume class."""
 
+import shutil
 import warnings
-from collections import UserDict, deque
+from collections import UserDict
 from pathlib import Path
 from typing import (
     Dict,
     List,
     Tuple,
-    Union,
 )
 
 import ngff_zarr as nz
 import numpy as np
-import numpy.typing as npt
-import pandas as pd
 import s3fs
-import zarr
 from brainglobe_space import AnatomicalSpace
 from fsspec.callbacks import TqdmCallback
 
 from brainglobe_atlasapi.descriptors import (
-    ANNOTATION_DTYPE,
     ATLAS_ORIENTATION,
-    REFERENCE_DTYPE,
-    V3_ANNOTATION_MAP_NAME,
-    V3_ANNOTATION_MASKS_NAME,
-    V3_ANNOTATION_NAME,
-    V3_HEMISPHERES_NAME,
-    V3_MESHES_DIRECTORY,
     V3_TEMPLATE_NAME,
-    V3_TERMINOLOGY_NAME,
-    remote_url_s3,
 )
-from brainglobe_atlasapi.structure_class import StructuresDict
-from brainglobe_atlasapi.utils import (
-    load_structures_from_csv,
-    read_json,
-)
+from brainglobe_atlasapi.utils import read_json
+
+from brainglobe_data_api_volume.descriptors import remote_url_data_s3
 
 
 def _determine_pyramid_level(
@@ -85,141 +71,38 @@ def _determine_pyramid_level(
 class Volume:
     """Base class to handle volume datasets in BrainGlobe.
 
+    Every dataset served by this API consists solely of volumes registered
+    to an atlas space; the atlas components themselves (template, annotation,
+    terminology and meshes) are provided by brainglobe-atlasapi.
+
     Parameters
     ----------
     path : str or Path object
-        Path to folder containing data info.
+        Path to the manifest.json file describing the dataset.
     """
 
-    left_hemisphere_value = 1
-    right_hemisphere_value = 2
-
     def __init__(self, path):
-        self._template_pyramid_level = 0
-        self._annotation_pyramid_level = 0
-        self.fs = s3fs.S3FileSystem(anon=True)
+        manifest_path = Path(path)
+        self.root_dir = manifest_path.parents[3]
+        self.metadata = read_json(manifest_path)
 
-        atlas_path = Path(path)
-        self.root_dir = atlas_path.parents[3]
-        self.metadata = read_json(atlas_path)
-        if self.metadata.get("volumes_only", False):
-            self.volumes = VolumeDict(
-                volumes_list=self.metadata["volumes"],
-                data_path=self.root_dir,
-                resolution=self.resolution,
-            )
-            self.space = AnatomicalSpace(
-                origin=self.orientation,
-                shape=self.shape,
-                resolution=self.resolution,
-            )
-            self.structures_list = []
-            self.structures = None
-            self._annotation = self._template = self._hemispheres = None
-            self._lookup = self._annotation_mapping = None
-            self._annotation_masks_pyramid_level = None
-            return
-        structures_path = (
-            self.root_dir
-            / self.metadata["terminology"]["location"][1:]
-            / V3_TERMINOLOGY_NAME
-        )
-        structures_list = load_structures_from_csv(structures_path)
-        meshes_path = (
-            self.root_dir
-            / self.metadata["annotation_set"]["location"][1:]
-            / V3_MESHES_DIRECTORY
-        )
-
-        template_location = self.metadata["annotation_set"]["template"][
-            "location"
-        ][1:]
-        template_path = self.root_dir / template_location / V3_TEMPLATE_NAME
-
-        multiscale = nz.from_ngff_zarr(template_path)
-        self._template_pyramid_level = _determine_pyramid_level(
-            multiscale, self.resolution
-        )
-        self._require_primary_components()
-        annotation_location = self.metadata["annotation_set"]["location"][1:]
-        annotation_path = (
-            self.root_dir / annotation_location / V3_ANNOTATION_NAME
-        )
-        multiscale = nz.from_ngff_zarr(annotation_path)
-        self._annotation_pyramid_level = _determine_pyramid_level(
-            multiscale, self.resolution
-        )
-
-        self._annotation_mapping = None
-        self._annotation_masks_pyramid_level = None
-        masks_path = self._annotation_masks_path
-        if masks_path.exists():
-            masks_multiscale = nz.from_ngff_zarr(masks_path)
-            self._annotation_masks_pyramid_level = _determine_pyramid_level(
-                masks_multiscale, self.resolution
-            )
-            root = zarr.open_group(str(masks_path), mode="r")
-            raw_mapping = root[V3_ANNOTATION_MAP_NAME][:]
-
-            self._annotation_mapping = {
-                int(annotation_id): array_ind
-                for array_ind, annotation_id in enumerate(raw_mapping)
-            }
-
-        # keep to generate tree and dataframe views when necessary
-        self.structures_list = structures_list
-
-        # Add entry for file paths:
-        for struct in structures_list:
-            struct["mesh_filename"] = meshes_path / f'{struct["id"]}'
-
-        self.structures = StructuresDict(structures_list)
-
-        # Instantiate SpaceConvention object describing the current atlas:
-        self.space = AnatomicalSpace(
-            origin=ATLAS_ORIENTATION,
-            shape=self.shape,
+        self.volumes = VolumeDict(
+            volumes_list=self.metadata["volumes"],
+            data_path=self.root_dir,
             resolution=self.resolution,
         )
 
-        try:
-            volumes = self.metadata.get(
-                "volumes", []
-            )
-            self.volumes = VolumeDict(
-                volumes_list=volumes,
-                data_path=self.root_dir,
-                resolution=self.resolution,
-            )
-        except KeyError:
-            warnings.warn(
-                "This atlas seems to be outdated as no "
-                "volumes list "
-                "is found in metadata!"
-            )
-
-        self._annotation = None
-        self._template = None
-        self._hemispheres = None
-        self._lookup = None
-
-    def _require_primary_components(self):
-        if self.metadata.get("volumes_only", False):
-            raise AttributeError(
-                "This dataset contains only volumes; "
-                "primary atlas components are unavailable."
-            )
+        # Instantiate SpaceConvention object describing the current dataset:
+        self.space = AnatomicalSpace(
+            origin=self.orientation,
+            shape=self.shape,
+            resolution=self.resolution,
+        )
 
     @property
     def resolution(self):
         """Make resolution more accessible from class."""
         return tuple(self.metadata["resolution"])
-
-    @property
-    def _annotation_masks_path(self) -> Path:
-        self._require_primary_components()
-        annotation_location = self.metadata["annotation_set"]["location"][1:]
-        return self.root_dir / annotation_location / V3_ANNOTATION_MASKS_NAME
 
     @property
     def orientation(self):
@@ -235,566 +118,6 @@ class Volume:
     def shape_um(self):
         """Make shape more accessible from class."""
         return tuple([s * r for s, r in zip(self.shape, self.resolution)])
-
-    @property
-    def hierarchy(self):
-        """Returns a Treelib.tree object with structures hierarchy."""
-        self._require_primary_components()
-        return self.structures.tree
-
-    @property
-    def lookup_df(self):
-        """Returns a dataframe with id, acronym and name for each structure."""
-        self._require_primary_components()
-        if self._lookup is None:
-            self._lookup = pd.DataFrame(
-                dict(
-                    acronym=[r["acronym"] for r in self.structures_list],
-                    id=[r["id"] for r in self.structures_list],
-                    name=[r["name"] for r in self.structures_list],
-                )
-            )
-        return self._lookup
-
-    @property
-    def template(self) -> npt.NDArray[REFERENCE_DTYPE]:
-        """Return the template image data. Loads it if not already loaded."""
-        self._require_primary_components()
-        if self._template is not None:
-            return self._template
-
-        template_location = self.metadata["annotation_set"]["template"][
-            "location"
-        ][1:]
-
-        template_path = self.root_dir / template_location / V3_TEMPLATE_NAME
-
-        multiscale = nz.from_ngff_zarr(template_path)
-        dataset_path = multiscale.metadata.datasets[
-            self._template_pyramid_level
-        ].path
-        resolution_path = template_path / dataset_path
-
-        if not (resolution_path / "c").exists():
-            print("Downloading template...")
-            remote_path = remote_url_s3.format(
-                f"{template_location}/{V3_TEMPLATE_NAME}/{dataset_path}/"
-            )
-            self.fs.get(
-                remote_path,
-                resolution_path,
-                recursive=True,
-                callback=TqdmCallback(),
-            )
-
-        self._template = multiscale.images[
-            self._template_pyramid_level
-        ].data.compute()
-
-        return self._template
-
-    @property
-    def reference(self):
-        """Return the template image data.
-
-        Warning: this is a deprecated alias for template, and will be removed
-        in future versions. Use atlas.template instead.
-        """
-        print(
-            "Warning: atlas.reference is a deprecated alias for "
-            "atlas.template, and will be removed in future versions."
-        )
-        return self.template
-
-    @property
-    def annotation(self) -> npt.NDArray[ANNOTATION_DTYPE]:
-        """Return the annotation image data. Loads it if not already loaded."""
-        self._require_primary_components()
-        if self._annotation is not None:
-            return self._annotation
-
-        self._require_primary_components()
-        annotation_location = self.metadata["annotation_set"]["location"][1:]
-        annotation_path = (
-            self.root_dir / annotation_location / V3_ANNOTATION_NAME
-        )
-
-        multiscale = nz.from_ngff_zarr(annotation_path)
-        dataset_path = multiscale.metadata.datasets[
-            self._annotation_pyramid_level
-        ].path
-        resolution_path = annotation_path / dataset_path
-
-        if not (resolution_path / "c").exists():
-            print("Downloading annotations...")
-            remote_path = remote_url_s3.format(
-                f"{annotation_location}/{V3_ANNOTATION_NAME}/{dataset_path}/"
-            )
-            self.fs.get(
-                remote_path,
-                resolution_path,
-                recursive=True,
-                callback=TqdmCallback(),
-            )
-
-        self._annotation = multiscale.images[
-            self._annotation_pyramid_level
-        ].data.compute()
-
-        return self._annotation
-
-    @property
-    def hemispheres(self):
-        """
-        Returns a stack with the hemisphere information. 1 - left, 2 - right.
-
-        If a symmetric reference is used, the hemisphere information is
-        generated by splitting the reference in half along the frontal axis.
-        If the reference has an odd number of voxels along the frontal axis,
-        the middle plane is assigned to the left hemisphere.
-        """
-        self._require_primary_components()
-        if self._hemispheres is not None:
-            return self._hemispheres
-
-        # If reference is symmetric generate hemispheres block:
-        if self.metadata["symmetric"]:
-            # initialize empty stack:
-            stack = np.full(self.metadata["shape"], 2, dtype=np.uint8)
-
-            # Use bgspace description to fill out with hemisphere values:
-            front_ax_idx = self.space.axes_order.index("frontal")
-
-            # Fill out with 2s the right hemisphere:
-            slices = [slice(None) for _ in range(3)]
-            slices[front_ax_idx] = slice(
-                round(stack.shape[front_ax_idx] / 2), None
-            )
-            stack[tuple(slices)] = 1
-
-            self._hemispheres = stack
-        else:
-            annotation_location = self.metadata["annotation_set"]["location"][
-                1:
-            ]
-            hemispheres_path = (
-                self.root_dir / annotation_location / V3_HEMISPHERES_NAME
-            )
-
-            multiscale = nz.from_ngff_zarr(hemispheres_path)
-            dataset_path = multiscale.metadata.datasets[
-                self._annotation_pyramid_level
-            ].path
-            resolution_path = hemispheres_path / dataset_path
-
-            if not (resolution_path / "c").exists():
-                print("Downloading hemispheres...")
-                remote_path = remote_url_s3.format(
-                    f"{annotation_location}/{V3_HEMISPHERES_NAME}/{dataset_path}/"
-                )
-                self.fs.get(
-                    remote_path,
-                    resolution_path,
-                    recursive=True,
-                    callback=TqdmCallback(),
-                )
-
-            self._hemispheres = multiscale.images[
-                self._annotation_pyramid_level
-            ].data.compute()
-
-        return self._hemispheres
-
-    def hemisphere_from_coords(
-        self,
-        coords: Union[Tuple, List, np.ndarray],
-        microns: bool = False,
-        as_string: bool = False,
-    ) -> Union[int, str]:
-        """Get the hemisphere from a coordinate triplet.
-
-        Parameters
-        ----------
-        coords : tuple or list or numpy array
-            Triplet of coordinates. Default in voxels, can be microns if
-            microns=True
-        microns : bool
-            If true, coordinates are interpreted in microns.
-        as_string : bool
-            If true, returns "left" or "right".
-
-
-        Returns
-        -------
-        int or string
-            Hemisphere label.
-
-        """
-        hem = self.hemispheres[self._idx_from_coords(coords, microns)]
-        if as_string:
-            hem = ["left", "right"][hem - 1]
-        return hem
-
-    def structure_from_coords(
-        self,
-        coords,
-        microns=False,
-        as_acronym=False,
-        hierarchy_lev=None,
-        key_error_string="Outside atlas",
-    ):
-        """Get the structure from a coordinate triplet.
-
-        Parameters
-        ----------
-        coords : tuple or list or numpy array
-            Triplet of coordinates.
-        microns : bool
-            If true, coordinates are interpreted in microns.
-        as_acronym : bool
-            If true, the region acronym is returned.
-            If outside atlas (structure gives key error),
-            return "Outside atlas"
-        hierarchy_lev : int or None
-            If specified, return parent node at thi hierarchy level.
-
-        Returns
-        -------
-        int or string
-            Structure containing the coordinates.
-        """
-        rid = self.annotation[self._idx_from_coords(coords, microns)]
-
-        # If we want to cut the result at some high level of the hierarchy:
-        if hierarchy_lev is not None:
-            rid = self.structures[rid]["structure_id_path"][hierarchy_lev]
-
-        if as_acronym:
-            try:
-                d = self.structures[rid]
-                return d["acronym"]
-            except KeyError:
-                return key_error_string
-        else:
-            return rid
-
-    # Meshes-related methods:
-    def _get_from_structure(self, structure, key):
-        """Provide internal interface to the structure dict. It supports
-        querying with a single structure id or a list of ids.
-
-        Parameters
-        ----------
-        structure : int or str or list
-            Valid id or acronym, or list if ids or acronyms.
-        key : str
-            Key for the Structure dictionary (eg "name" or "rgb_triplet").
-
-        Returns
-        -------
-        value or list of values
-            If structure is a list, returns list.
-
-        """
-        if isinstance(structure, list) or isinstance(structure, tuple):
-            return [self._get_from_structure(s, key) for s in structure]
-        else:
-            return self.structures[structure][key]
-
-    def mesh_from_structure(self, structure):
-        """
-        Retrieve the mesh associated with a given structure.
-
-        Parameters
-        ----------
-        structure : int or str or list of int/str
-            The ID or acronym of the structure for which to retrieve the mesh.
-            If a list of IDs/acronyms is passed, a list of meshes will
-            be returned.
-
-        Returns
-        -------
-        meshio.Mesh or list of meshio.Mesh
-            The mesh data (e.g., a Mesh object) associated with the
-            structure(s).
-        """
-        return self._get_from_structure(structure, "mesh")
-
-    def meshfile_from_structure(self, structure):
-        """
-        Retrieve the path to the mesh file associated with a given structure.
-
-        Parameters
-        ----------
-        structure : int or str
-            The ID or acronym of the structure for which to retrieve the mesh
-            file path. If a list of IDs/acronyms is passed, a list of paths
-            will be returned.
-
-        Returns
-        -------
-        Path or list of Path
-            The path(s) to the mesh file(s) for the structure(s).
-        """
-        return self._get_from_structure(structure, "mesh_filename")
-
-    def root_mesh(self):
-        """
-        Retrieve the mesh for the root structure.
-
-        Returns
-        -------
-            The mesh data for the root structure.
-        """
-        return self.mesh_from_structure("root")
-
-    def root_meshfile(self):
-        """
-        Retrieve the path to the mesh file for the root structure.
-
-        Returns
-        -------
-            str: The path to the mesh file for the root structure.
-        """
-        return self.meshfile_from_structure("root")
-
-    def _idx_from_coords(self, coords, microns):
-        # If microns are passed, convert:
-        if microns:
-            coords = [c / res for c, res in zip(coords, self.resolution)]
-
-        return tuple([int(c) for c in coords])
-
-    def get_structure_ancestors(self, structure: Union[str, int]) -> List[str]:
-        """Return a list of acronyms for all ancestors of a given structure.
-
-        Parameters
-        ----------
-        structure : str or int
-            Structure id or acronym
-
-        Returns
-        -------
-        list
-            List of descendants acronyms
-
-        """
-        ancestors_id = self._get_from_structure(
-            structure, "structure_id_path"
-        )[:-1]
-
-        return self._get_from_structure(ancestors_id, "acronym")
-
-    def get_structure_descendants(
-        self, structure: Union[str, int]
-    ) -> List[str]:
-        """Return a list of acronyms for all descendants of a given structure.
-
-        Parameters
-        ----------
-        structure : str or int
-            Structure id or acronym
-
-        Returns
-        -------
-        list
-            List of descendants acronyms
-
-        """
-        structure = self._get_from_structure(structure, "acronym")
-
-        # For all structures check if given structure is ancestor
-        descendants = []
-        for struc in self.structures.keys():
-            if structure in self.get_structure_ancestors(struc):
-                descendants.append(self._get_from_structure(struc, "acronym"))
-
-        return descendants
-
-    def get_structures_at_hierarchy_level(
-        self, structure, hierarchy_level=None, as_acronym=False
-    ):
-        """
-        Get structures at a specific hierarchy level within the subgraph
-        of nodes connected to the given structure.
-
-        For a given brain structure, this method finds all leaf nodes
-        (terminal structures with no children) in its subtree, then extracts
-        the structures at the specified hierarchy level from their paths.
-
-        Parameters
-        ----------
-        structure : str or int
-            Structure ID or acronym to query.
-        hierarchy_level : int or None, optional
-            The hierarchy level to extract (0-indexed, where 0 is root).
-            If None, returns all structures in the paths to all leaves
-            in anatomical order (breadth-first traversal).
-        as_acronym : bool, optional
-            If True, return acronyms instead of IDs. Default is False.
-
-        Returns
-        -------
-        list
-            List of structure IDs (if as_acronym=False) or acronyms
-            (if as_acronym=True) at the specified hierarchy level.
-
-        Raises
-        ------
-        ValueError
-            If hierarchy_level is not an integer or None.
-            If the structure has no descendants at the specified level.
-
-        Examples
-        --------
-        >>> atlas = BrainGlobeVolume("allen_mouse_25um")
-        >>> # Get all level-3 structures under cortex
-        >>> ids = atlas.get_structures_at_hierarchy_level("CTX", 3)
-        >>> # Get as acronyms instead
-        >>> acronyms = atlas.get_structures_at_hierarchy_level(
-        ...     "CTX", 3, as_acronym=True
-        ... )
-        """
-        # Type validation
-        if not (
-            hierarchy_level is None
-            or (
-                isinstance(hierarchy_level, int)
-                and not isinstance(hierarchy_level, bool)
-            )
-        ):
-            raise ValueError(
-                f"hierarchy_level must be an int or None, "
-                f"got {type(hierarchy_level).__name__}"
-            )
-
-        # Validate non-negative hierarchy level
-        if hierarchy_level is not None and hierarchy_level < 0:
-            raise ValueError("hierarchy_level must be non-negative")
-
-        # Validate structure exists
-        try:
-            input_id = self.structures[structure]["id"]
-        except KeyError:
-            raise KeyError(f"Structure '{structure}' not found in atlas")
-
-        if hierarchy_level is None:
-            # Return all ancestors + descendants in anatomical (BFS) order
-
-            # Start with ancestors (already ordered root → input_id)
-            ancestor_path = self.structures[input_id]["structure_id_path"]
-            result = list(ancestor_path)
-            seen = set(ancestor_path)
-
-            # BFS through descendants
-            queue = deque([input_id])
-            while queue:
-                current_id = queue.popleft()
-                children = self.structures.tree.children(current_id)
-                for child in children:
-                    child_id = child.identifier
-                    if child_id not in seen:
-                        result.append(child_id)
-                        seen.add(child_id)
-                        queue.append(child_id)
-        else:
-            # Get structures at specific hierarchy level
-            # Get all leaf nodes (terminal descendants) of this structure
-            input_id_leaves = self.structures.tree.leaves(input_id)
-
-            # If input_id is itself a leaf, use it as its own leaf
-            if not input_id_leaves:
-                input_id_leaves = [self.structures.tree.get_node(input_id)]
-
-            try:
-                result = list(
-                    set(
-                        self.structures[leaf.identifier]["structure_id_path"][
-                            hierarchy_level
-                        ]
-                        for leaf in input_id_leaves
-                    )
-                )
-            except IndexError:
-                raise ValueError(
-                    f'Structure {self.structures[structure]["acronym"]} '
-                    f"has no descendants at hierarchy level {hierarchy_level}"
-                )
-
-        if as_acronym:
-            return [self.structures[sid]["acronym"] for sid in result]
-        return result
-
-    def get_structure_mask(self, structure) -> npt.NDArray[np.uint8]:
-        """Return binary uint8 mask for the given structure.
-
-        Reads directly from the pre-built 4D annotation masks array.
-
-        Parameters
-        ----------
-        structure : str or int
-            Structure acronym or id.
-
-        Returns
-        -------
-        np.ndarray
-            Binary uint8 array; 1 where the structure (or a descendant)
-            has a voxel, 0 elsewhere.
-
-        Raises
-        ------
-        FileNotFoundError
-            If this atlas does not have a 4D mask array on disk.
-        KeyError
-            If the structure is not present in the annotation mapping.
-        """
-        if self._annotation_mapping is None:
-            raise FileNotFoundError(
-                "This atlas does not have a 4D mask array. "
-                "Re-download the atlas to get the latest version."
-            )
-        structure_id = self.structures[structure]["id"]
-        if structure_id not in self._annotation_mapping:
-            raise KeyError(
-                f"Structure {structure} (id={structure_id}) not found in "
-                "annotation mapping."
-            )
-
-        index = self._annotation_mapping[structure_id]
-        masks_path = self._annotation_masks_path
-        multiscale = nz.from_ngff_zarr(masks_path)
-        dataset_path = multiscale.metadata.datasets[
-            self._annotation_masks_pyramid_level
-        ].path
-        # Check if the mask is cached locally. The presence of the
-        # directory for the specific index indicates that the mask is cached.
-        local_path = masks_path / dataset_path / "c" / str(index)
-        if not local_path.exists():
-            annotation_location = self.metadata["annotation_set"]["location"][
-                1:
-            ]
-            remote_path = remote_url_s3.format(
-                f"{annotation_location}/{V3_ANNOTATION_MASKS_NAME}"
-                f"/{dataset_path}/c/{index}/"
-            )
-            try:
-                self.fs.get(
-                    remote_path,
-                    local_path,
-                    recursive=True,
-                    callback=TqdmCallback(),
-                )
-            except FileNotFoundError as e:
-                raise FileNotFoundError(
-                    f"Mask for structure {structure} (id={structure_id}) "
-                    f"not found at {remote_path}"
-                ) from e
-
-        return (
-            multiscale.images[self._annotation_masks_pyramid_level]
-            .data[index]
-            .compute()
-        )
 
 
 class VolumeDict(UserDict):
@@ -814,6 +137,7 @@ class VolumeDict(UserDict):
         self.volume_names = [ref["name"] for ref in volumes_list]
         self.volumes_dict = {ref["name"]: ref for ref in volumes_list}
         self.resolution = resolution
+        self.fs = s3fs.S3FileSystem(anon=True)
 
         super().__init__(*args, **kwargs)
 
@@ -859,6 +183,23 @@ class VolumeDict(UserDict):
                 self.data_path / volume_location / V3_TEMPLATE_NAME
             )
 
+            if not local_path.exists():
+                print(f"Downloading metadata for volume {key}:")
+                remote_metadata_path = remote_url_data_s3.format(
+                    f"{volume_location}/{V3_TEMPLATE_NAME}/**/*.json"
+                )
+                try:
+                    self.fs.get(
+                        remote_metadata_path,
+                        local_path,
+                        callback=TqdmCallback(),
+                    )
+                except BaseException:
+                    # Drop a partial download so the next access retries
+                    # rather than reading incomplete metadata.
+                    shutil.rmtree(local_path, ignore_errors=True)
+                    raise
+
             multiscale = nz.from_ngff_zarr(local_path)
             pyramid_level = _determine_pyramid_level(
                 multiscale, self.resolution
@@ -869,11 +210,10 @@ class VolumeDict(UserDict):
 
             if not (resolution_path / "c").exists():
                 print("Downloading volume...")
-                remote_path = remote_url_s3.format(
+                remote_path = remote_url_data_s3.format(
                     f"{volume_location}/{V3_TEMPLATE_NAME}/{dataset_path}/"
                 )
-                fs = s3fs.S3FileSystem(anon=True)
-                fs.get(
+                self.fs.get(
                     remote_path,
                     resolution_path,
                     recursive=True,

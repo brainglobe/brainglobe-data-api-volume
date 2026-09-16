@@ -13,15 +13,6 @@ from rich.console import Console
 
 from brainglobe_atlasapi import config
 from brainglobe_atlasapi.atlas_name import AtlasName
-from brainglobe_atlasapi.descriptors import (
-    V3_ANNOTATION_MAP_NAME,
-    V3_ANNOTATION_MASKS_NAME,
-    V3_ANNOTATION_NAME,
-    V3_HEMISPHERES_NAME,
-    V3_MESHES_DIRECTORY,
-    V3_TEMPLATE_NAME,
-    remote_url_s3,
-)
 from brainglobe_atlasapi.utils import (
     _rich_atlas_metadata,
     check_internet_connection,
@@ -34,6 +25,7 @@ from brainglobe_data_api_volume import core
 from brainglobe_data_api_volume.descriptors import (
     DATA_ROOTDIR,
     MANIFESTS_ROOTDIR,
+    remote_url_data_s3,
 )
 
 
@@ -201,7 +193,7 @@ class BrainGlobeVolume(core.Volume):
         if not check_s3_status(raise_error=False):
             return None
 
-        bucket_path = remote_url_s3.format(
+        bucket_path = remote_url_data_s3.format(
             f"{MANIFESTS_ROOTDIR}/{self.atlas_name}"
         )
 
@@ -236,10 +228,10 @@ class BrainGlobeVolume(core.Volume):
         return self._remote_version
 
     def download(self):
-        """Download and extract the atlas files from remote storage.
+        """Download the dataset manifest from remote storage.
 
-        The manifest file is removed if any error occurs during the
-        download to ensure that incomplete downloads are retried.
+        The manifest file is removed if any error occurs while reading it,
+        to ensure that incomplete downloads are retried.
         """
         check_s3_status()
 
@@ -250,7 +242,7 @@ class BrainGlobeVolume(core.Volume):
         )
 
         local_path = self.brainglobe_dir / key_name
-        remote_path = remote_url_s3.format(key_name)
+        remote_path = remote_url_data_s3.format(key_name)
 
         local_path.parent.mkdir(parents=True, exist_ok=True)
         print(
@@ -258,180 +250,19 @@ class BrainGlobeVolume(core.Volume):
             f"v{remote_version_str.replace('_', '.')} manifest:"
         )
         self.fs.get(remote_path, local_path, callback=TqdmCallback())
-        self.metadata = read_json(local_path)
 
         try:
-            if self.metadata.get("volumes_only", False):
-                self._download_volumes()
-                self._local_full_name = None
-                return
-
-            # Download terminology file
-            terminology_location = self.metadata["terminology"]["location"][1:]
-            local_terminology_path = self.brainglobe_dir / terminology_location
-            if not local_terminology_path.exists():
-                remote_terminology_path = remote_url_s3.format(
-                    terminology_location
-                )
-                print(
-                    f"Downloading terminology metadata "
-                    f"for {self.metadata['terminology']['name']}:"
-                )
-                self.fs.get(
-                    remote_terminology_path,
-                    local_terminology_path,
-                    recursive=True,
-                    callback=TqdmCallback(),
-                )
-
-            # Download coordinate space files
-            coordspace_location = self.metadata["coordinate_space"][
-                "location"
-            ][1:]
-            local_coordspace_path = self.brainglobe_dir / coordspace_location
-            if not local_coordspace_path.exists():
-                remote_coordspace_path = remote_url_s3.format(
-                    coordspace_location
-                )
-                print(
-                    f"Downloading coordinate space metadata "
-                    f"for {self.metadata['coordinate_space']['name']}:"
-                )
-                self.fs.get(
-                    remote_coordspace_path,
-                    local_coordspace_path,
-                    recursive=True,
-                    callback=TqdmCallback(),
-                )
-
-            # Download annotation metadata files
-            annotation_location = self.metadata["annotation_set"]["location"][
-                1:
-            ]
-            local_annotation_path = self.brainglobe_dir / annotation_location
-            if not local_annotation_path.exists():
-                root_metadata_path = (
-                    annotation_location + f"/{V3_ANNOTATION_NAME}/**/*.json"
-                )
-                remote_root_metadata_path = remote_url_s3.format(
-                    root_metadata_path
-                )
-                print(
-                    f"Downloading annotation metadata "
-                    f"for {self.metadata['annotation_set']['name']}:"
-                )
-                self.fs.get(
-                    remote_root_metadata_path,
-                    local_annotation_path / V3_ANNOTATION_NAME,
-                    callback=TqdmCallback(),
-                )
-                mesh_path = local_annotation_path / V3_MESHES_DIRECTORY
-                mesh_path.mkdir(parents=True, exist_ok=True)
-
-                # Download 4D masks metadata (JSON only; chunk data is lazy)
-                try:
-                    masks_metadata_glob = (
-                        annotation_location
-                        + f"/{V3_ANNOTATION_MASKS_NAME}/**/*.json"
-                    )
-                    remote_masks_metadata = remote_url_s3.format(
-                        masks_metadata_glob
-                    )
-                    self.fs.get(
-                        remote_masks_metadata,
-                        str(local_annotation_path / V3_ANNOTATION_MASKS_NAME),
-                        callback=TqdmCallback(),
-                    )
-                    masks_annotation_values_path = (
-                        annotation_location + f"/{V3_ANNOTATION_MASKS_NAME}"
-                        f"/{V3_ANNOTATION_MAP_NAME}"
-                    )
-                    remote_masks_annotation_values_path = remote_url_s3.format(
-                        masks_annotation_values_path
-                    )
-                    self.fs.get(
-                        remote_masks_annotation_values_path,
-                        str(local_annotation_path / V3_ANNOTATION_MASKS_NAME),
-                        callback=TqdmCallback(),
-                        recursive=True,
-                    )
-                except FileNotFoundError as e:
-                    raise FileNotFoundError(
-                        f"Annotation masks metadata not found for atlas "
-                        f"{self.atlas_name} "
-                        f"v{remote_version_str.replace('_', '.')}."
-                    ) from e
-
-                if not self.metadata["symmetric"]:
-                    root_hemisphere_path = (
-                        annotation_location
-                        + f"/{V3_HEMISPHERES_NAME}/**/*.json"
-                    )
-                    remote_root_hemisphere_path = remote_url_s3.format(
-                        root_hemisphere_path
-                    )
-                    self.fs.get(
-                        remote_root_hemisphere_path,
-                        local_annotation_path / V3_HEMISPHERES_NAME,
-                        callback=TqdmCallback(),
-                    )
-
-            # Download template metadata files
-            template_location = self.metadata["annotation_set"]["template"][
-                "location"
-            ][1:]
-            local_template_path = self.brainglobe_dir / template_location
-            if not local_template_path.exists():
-                root_metadata_path = (
-                    template_location + f"/{V3_TEMPLATE_NAME}/**/*.json"
-                )
-                remote_root_metadata_path = remote_url_s3.format(
-                    root_metadata_path
-                )
-
-                print(
-                    f"Downloading template metadata "
-                    f"for {self.metadata['template']['name']}:"
-                )
-                self.fs.get(
-                    remote_root_metadata_path,
-                    local_template_path / V3_TEMPLATE_NAME,
-                    callback=TqdmCallback(),
-                )
-
-            self._download_volumes()
-            # Reset local_full_name to ensure it is updated with new location
-            self._local_full_name = None
-
+            self.metadata = read_json(local_path)
         except Exception:
             # Remove the manifest so the next run detects the incomplete
-            # download and retries rather than finding partial files.
+            # download and retries rather than finding a partial file.
             local_path.unlink(missing_ok=True)
             raise
 
-    def _download_volumes(self):
-        """Download metadata for the volumes listed in the manifest."""
-        volume_names = self.metadata.get(
-            "volumes", []
-        )
-
-        for ref in volume_names:
-            template_location = ref["location"][1:]
-            local_template_path = self.brainglobe_dir / template_location
-
-            if not local_template_path.exists():
-                root_metadata_path = (
-                    template_location + f"/{V3_TEMPLATE_NAME}/**/*.json"
-                )
-                remote_root_metadata_path = remote_url_s3.format(
-                    root_metadata_path
-                )
-                print(f"Downloading template metadata for {ref['name']}:")
-                self.fs.get(
-                    remote_root_metadata_path,
-                    local_template_path / V3_TEMPLATE_NAME,
-                    callback=TqdmCallback(),
-                )
+        # The volumes themselves, and their OME-Zarr metadata, are fetched
+        # lazily on first access via dataset.volumes[name], so the manifest
+        # is all that is needed up front.
+        self._local_full_name = None
 
     def check_latest_version(
         self, print_warning: bool = True
