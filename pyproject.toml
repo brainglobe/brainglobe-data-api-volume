@@ -1,6 +1,6 @@
 [project]
 name = "brainglobe-data-api-volume"
-authors = [{name = "Harry Carey", email= "harry.carey95@gmail.com"}]
+authors = [{name = "Brainglobe Developers", email= "hello@brainglobe.info"}]
 description = "An API for accessing atlas registered 3D volumetric data."
 readme = "README.md"
 requires-python = ">=3.11.0"
