@@ -1,0 +1,1145 @@
+"""Tools to finalise the atlas creation process."""
+
+import gc
+import json
+import shutil
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
+
+import brainglobe_space as bgs
+import dask.array as da
+import meshio as mio
+import ngff_zarr as nz
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+import treelib
+import zarr
+from brainglobe_atlasapi import atlas_generation, descriptors
+from brainglobe_atlasapi.atlas_generation.mesh_utils import (
+    write_mesh,
+    write_mesh_info,
+)
+from brainglobe_atlasapi.atlas_generation.metadata_utils import (
+    generate_metadata_dict,
+)
+from brainglobe_atlasapi.atlas_generation.stacks import (
+    BG_OME_ZARR_AXES,
+    save_annotation,
+    save_annotation_masks,
+    save_hemispheres,
+    save_template,
+    write_multiscale_ome_zarr,
+)
+from brainglobe_atlasapi.atlas_generation.validate_atlases import (
+    get_all_validation_functions,
+    report_validation_results,
+)
+from brainglobe_atlasapi.atlas_generation.volume_utils import (
+    create_masked_array_numba,
+)
+from brainglobe_atlasapi.bg_atlas import BrainGlobeAtlas
+from brainglobe_atlasapi.descriptors import (
+    ANNOTATION_DTYPE,
+    V3_ANNOTATION_MAP_NAME,
+    Resolution,
+    ResolutionList,
+    ValidComponentData,
+)
+from brainglobe_atlasapi.structure_tree_util import (
+    get_structures_tree,
+    postorder_depth_first_search,
+)
+from brainglobe_atlasapi.utils import atlas_name_from_repr
+from cloudvolume import CloudVolume
+from numba.core import types
+from numba.typed import Dict as TypedDict
+from tqdm import tqdm
+
+from brainglobe_data_api_volume.atlas_generation.atlas_packaging_data import (
+    VolumePackagingData,
+    AtlasPackagingData,
+    TemplateInfo,
+)
+from brainglobe_data_api_volume.descriptors import (
+    DATA_ROOTDIR,
+    MANIFESTS_ROOTDIR,
+)
+
+# This should be changed every time we make changes in the atlas
+# structure:
+ATLAS_VERSION = atlas_generation.__version__
+
+
+def _save_if_not_exists(
+    stacks: List[npt.NDArray],
+    dest_dir: Path,
+    label: str,
+    transformations: List[List[dict]],
+    save_fn: Callable[[npt.NDArray, Path, List[List[dict]]], None],
+) -> None:
+    if dest_dir.exists():
+        print(f"{label} directory already exists, skipping: {dest_dir}")
+        return
+
+    save_fn(stacks, dest_dir, transformations)
+
+
+def _merge_resolutions_list(
+    existing_resolutions: ResolutionList,
+    new_resolutions: ResolutionList,
+) -> ResolutionList:
+    merged_resolutions = sorted(set(existing_resolutions + new_resolutions))
+
+    return merged_resolutions
+
+
+def _insert_into_multiscale(
+    multiscale: nz.Multiscales,
+    transformations: List[List[dict]],
+    new_data: List[npt.NDArray],
+    working_dir: Path,
+    axes: List[dict] = BG_OME_ZARR_AXES,
+) -> None:
+    requested_resolutions = [
+        tuple(transform[0]["scale"]) for transform in transformations
+    ]
+    # Merge existing multiscale transformations with new ones
+    merged_resolutions = _merge_resolutions_list(
+        [tuple(im.scale.values()) for im in multiscale.images],
+        requested_resolutions,
+    )
+
+    # Create a mapping from resolution to new_data
+    resolution_to_data = dict(zip(requested_resolutions, new_data))
+
+    # Extract existing data into the map
+    for image in multiscale.images:
+        res_tuple = tuple(image.scale.values())
+        if res_tuple not in resolution_to_data:
+            resolution_to_data[res_tuple] = image.data.compute()
+
+    dtype = multiscale.images[0].data.dtype
+
+    # Create new images list with merged resolutions
+    stack_list = [
+        resolution_to_data[res].astype(dtype) for res in merged_resolutions
+    ]
+    new_transformations = _transformations_from_scales(merged_resolutions)
+
+    write_multiscale_ome_zarr(
+        images=stack_list,
+        output_path=working_dir,
+        transformations=new_transformations,
+        axes=axes,
+    )
+
+
+def _transformations_from_scales(
+    scales: Sequence[Sequence[float]],
+) -> List[List[dict]]:
+    """Build OME-Zarr coordinate transformations from per-level scales.
+
+    Parameters
+    ----------
+    scales : sequence of sequences of float
+        Scale (voxel size) per axis for each pyramid level, ordered from
+        highest to lowest resolution.
+    """
+    scales = [list(level) for level in scales]
+    if not scales:
+        raise ValueError(
+            "scales must be a non-empty sequence of per-level scales"
+        )
+
+    ndim = len(scales[0])
+    if any(len(level) != ndim for level in scales):
+        raise ValueError(f"All scale levels must have {ndim} axes: {scales}")
+
+    if any(
+        any(curr < prev for curr, prev in zip(scales[i], scales[i - 1]))
+        for i in range(1, len(scales))
+    ):
+        raise ValueError(
+            f"Resolutions must be ordered from highest to lowest: {scales}"
+        )
+
+    base = scales[0]
+    return [
+        [
+            {"type": "scale", "scale": list(level)},
+            {
+                "type": "translation",
+                "translation": [
+                    round((scale - reference) / 2, 9)
+                    for scale, reference in zip(level, base)
+                ],
+            },
+        ]
+        for level in scales
+    ]
+
+
+def _save_coordinate_space_manifest(
+    coordinate_space_metadata: dict,
+    coordinate_space_path: Path,
+) -> None:
+    with open(coordinate_space_path, "w") as f:
+        json.dump(coordinate_space_metadata, f, indent=4)
+
+
+def _save_precomputed_directory(
+    packaging_data: AtlasPackagingData,
+    mesh_dest_dir: Path,
+    scale_meshes: bool,
+    resolution_mapping: List[int] | None,
+):
+    _save_meshes(
+        packaging_data.meshes_dict,
+        mesh_dest_dir,
+        packaging_data.space_convention,
+        scale_meshes,
+        packaging_data.resolution,
+        resolution_mapping,
+    )
+
+    output_dir = mesh_dest_dir.parent
+
+    _write_precomputed_annotations(packaging_data, output_dir)
+
+
+def _write_precomputed_annotations(
+    packaging_data: AtlasPackagingData,
+    output_dir: Path,
+):
+    cloudpath = f"file://{output_dir.resolve()}"
+    annotations = packaging_data.annotation_stack[0]
+    resolution_nm = np.array(packaging_data.resolution[0]) * 1000
+
+    # All values in XYZ
+    resolution_nm = resolution_nm[[2, 1, 0]]
+    annotations = annotations.transpose(2, 1, 0).astype(
+        descriptors.ANNOTATION_DTYPE
+    )  # ZYX -> XYZ
+    voxel_offset = (0, 0, 0)
+    chunk_size = (256, 256, 64)
+    cseg_block_size = (8, 8, 8)
+
+    info = CloudVolume.create_new_info(
+        num_channels=1,
+        layer_type="segmentation",
+        data_type=str(annotations.dtype),
+        encoding="compressed_segmentation",
+        resolution=list(resolution_nm),
+        voxel_offset=list(voxel_offset),
+        chunk_size=list(chunk_size),
+        compressed_segmentation_block_size=list(cseg_block_size),
+        volume_size=list(annotations.shape),
+        mesh="mesh",
+    )
+
+    info["segment_properties"] = "segment_properties"
+
+    vol = CloudVolume(cloudpath, info=info, compress=False, progress=True)
+    vol.commit_info()
+    vol[:] = annotations
+
+    prop_out = output_dir / "segment_properties"
+    prop_out.mkdir()
+
+    terminology_path = (
+        packaging_data.working_dir / packaging_data.terminology_info.stub
+    )
+    ontology = pd.read_csv(terminology_path)
+
+    formatted_ontology = ontology.apply(
+        lambda row: (
+            str(row["identifier"]),
+            f"{row['abbreviation']}: ({row['name']})",
+        ),
+        axis=1,
+    ).to_list()
+
+    segment_properties = {
+        "@type": "neuroglancer_segment_properties",
+        "inline": {
+            "ids": [id for id, _ in formatted_ontology],
+            "properties": [
+                {
+                    "id": "abbreviation",
+                    "type": "label",
+                    "values": [abbr for _, abbr in formatted_ontology],
+                }
+            ],
+        },
+    }
+
+    with open(prop_out / "info", "w") as f:
+        json.dump(segment_properties, f, indent=4)
+
+
+def _save_meshes(
+    meshes_dict: Dict[int | str, str | Path],
+    mesh_dest_dir: Path,
+    space_convention: bgs.AnatomicalSpace,
+    scale_meshes: bool,
+    resolution_standard: ResolutionList,
+    resolution_mapping: List[int] | None,
+) -> None:
+    if mesh_dest_dir.exists():
+        print(f"Mesh directory already exists, skipping: {mesh_dest_dir}")
+        return
+
+    mesh_dest_dir.mkdir(parents=True)
+
+    for mesh_id, meshfile in meshes_dict.items():
+        mesh = mio.read(meshfile)
+
+        if len(mesh.points) == 0:
+            continue
+
+        # Scale from voxel to physical units (um) if requested
+        if scale_meshes:
+            if not resolution_mapping:
+                mesh.points *= np.array(resolution_standard[0])
+            else:
+                original_resolution = (
+                    resolution_standard[0][resolution_mapping[0]],
+                    resolution_standard[0][resolution_mapping[1]],
+                    resolution_standard[0][resolution_mapping[2]],
+                )
+                mesh.points *= np.array(original_resolution)
+
+        # Reorient to the atlas space convention
+        mesh.points = space_convention.map_points_to(
+            descriptors.ATLAS_ORIENTATION, mesh.points
+        )
+
+        # Reorient from ZYX to XYZ for Neuroglancer and scale from um to nm
+        mesh.points = mesh.points[:, [2, 1, 0]] * 1000  # um -> nm
+        mesh.cells[0].data = mesh.cells[0].data[:, [2, 1, 0]]
+
+        # TODO: parallelise and copy if not scaling or reorienting
+        write_mesh(mesh, mesh_dest_dir, mesh_id)
+
+    write_mesh_info(mesh_dest_dir)
+
+
+def _save_template_data(
+    packaging_data: AtlasPackagingData,
+    transformations: List[List[dict]],
+) -> nz.Multiscales:
+    template_info = packaging_data.template_info
+    if not (template_info.use_existing or template_info.update_existing):
+        dest_dir = packaging_data.working_dir / template_info.metadata[
+            "location"
+        ].lstrip("/")
+        _save_if_not_exists(
+            packaging_data.reference_stack,
+            dest_dir,
+            template_info.metadata["name"],
+            transformations,
+            save_template,
+        )
+        template_multiscale = nz.from_ngff_zarr(
+            packaging_data.working_dir / template_info.stub
+        )
+    elif template_info.update_existing:
+        local_existing_path = (
+            packaging_data.working_dir / template_info.existing_stub
+        )
+        multiscale = nz.from_ngff_zarr(local_existing_path)
+        local_target_path = packaging_data.working_dir / template_info.stub
+        _insert_into_multiscale(
+            multiscale,
+            transformations=transformations,
+            new_data=packaging_data.reference_stack,
+            working_dir=local_target_path,
+        )
+        template_multiscale = nz.from_ngff_zarr(local_target_path)
+    else:
+        template_multiscale = nz.from_ngff_zarr(
+            packaging_data.working_dir / template_info.stub
+        )
+
+    return template_multiscale
+
+
+def _save_annotation_data(
+    packaging_data: AtlasPackagingData,
+    transformations: List[List[dict]],
+    scale_meshes: bool,
+    resolution_mapping: Optional[List[int]],
+) -> Tuple[nz.Multiscales, nz.Multiscales]:
+    annotation_info = packaging_data.annotation_info
+
+    if not (annotation_info.use_existing or annotation_info.update_existing):
+        dest_dir = packaging_data.working_dir / annotation_info.metadata[
+            "location"
+        ].lstrip("/")
+
+        _save_if_not_exists(
+            packaging_data.annotation_stack,
+            dest_dir,
+            annotation_info.metadata["name"],
+            transformations,
+            save_annotation,
+        )
+
+        hemispheres_stub = descriptors.format_hemispheres_stub(
+            annotation_info.name, annotation_info.version
+        )
+        dest_dir_hemi = packaging_data.working_dir / hemispheres_stub
+
+        if not dest_dir_hemi.exists():
+            save_hemispheres(
+                packaging_data.hemispheres_stack,
+                dest_dir,
+                transformations,
+            )
+        else:
+            print(
+                f"{annotation_info.metadata['name']} directory already exists,"
+                f" skipping: {dest_dir_hemi}"
+            )
+        annotation_multiscale = nz.from_ngff_zarr(
+            packaging_data.working_dir / annotation_info.stub
+        )
+        hemispheres_multiscale = nz.from_ngff_zarr(dest_dir_hemi)
+    elif annotation_info.update_existing:
+        local_existing_path = (
+            packaging_data.working_dir / annotation_info.existing_stub
+        )
+        annotation_multiscale = nz.from_ngff_zarr(local_existing_path)
+        local_target_path = packaging_data.working_dir / annotation_info.stub
+        _insert_into_multiscale(
+            annotation_multiscale,
+            transformations=transformations,
+            new_data=packaging_data.annotation_stack,
+            working_dir=local_target_path,
+        )
+
+        existing_hemispheres_stub = descriptors.format_hemispheres_stub(
+            annotation_info.name, annotation_info.existing_version
+        )
+        local_existing_hemispheres = (
+            packaging_data.working_dir / existing_hemispheres_stub
+        )
+        hemispheres_multiscale = nz.from_ngff_zarr(local_existing_hemispheres)
+        hemispheres_stub = descriptors.format_hemispheres_stub(
+            annotation_info.name, annotation_info.version
+        )
+        local_target_hemispheres = (
+            packaging_data.working_dir / hemispheres_stub
+        )
+
+        _insert_into_multiscale(
+            hemispheres_multiscale,
+            transformations=transformations,
+            new_data=packaging_data.hemispheres_stack,
+            working_dir=local_target_hemispheres,
+        )
+
+        annotation_multiscale = nz.from_ngff_zarr(local_target_path)
+        hemispheres_multiscale = nz.from_ngff_zarr(local_target_hemispheres)
+    else:
+        hemispheres_stub = descriptors.format_hemispheres_stub(
+            annotation_info.name, annotation_info.version
+        )
+        annotation_multiscale = nz.from_ngff_zarr(
+            packaging_data.working_dir / annotation_info.stub
+        )
+        hemispheres_multiscale = nz.from_ngff_zarr(
+            packaging_data.working_dir / hemispheres_stub
+        )
+
+    if not annotation_info.use_existing:
+        meshes_stub = descriptors.format_meshes_stub(
+            annotation_info.name, annotation_info.version
+        )
+        mesh_dest_dir = packaging_data.working_dir / meshes_stub
+        _save_precomputed_directory(
+            packaging_data,
+            mesh_dest_dir,
+            scale_meshes,
+            resolution_mapping,
+        )
+
+    return annotation_multiscale, hemispheres_multiscale
+
+
+def _generate_annotation_mapping(tree: treelib.Tree) -> Dict[int, int]:
+    """Return {structure_id: index} in post-order (leaves first)."""
+    return {
+        node.identifier: i
+        for i, node in enumerate(postorder_depth_first_search(tree))
+    }
+
+
+def _compute_4d_masks_for_scale(
+    annotation_scale: npt.NDArray,
+    structures_tree: treelib.Tree,
+    mapping: Dict[int, int],
+    scratch_path: Path,
+) -> da.Array:
+    """Compute (N, Z, Y, X) uint8 mask array for one annotation scale level.
+
+    Masks are streamed into an on-disk scratch zarr (one structure per chunk)
+    rather than held in memory. During the post-order walk each structure's
+    children are read back from the scratch store, so peak memory is a few
+    (Z, Y, X) masks regardless of the number of structures. Returns a lazy
+    dask handle backed by ``scratch_path``; the caller owns that path and must
+    keep it alive until the handle has been computed.
+    """
+    n_structures = len(mapping)
+    typed_dict = TypedDict.empty(
+        key_type=types.uint32,
+        value_type=types.uint32,
+    )
+    for k, v in mapping.items():
+        typed_dict[types.uint32(k)] = types.uint32(v)
+
+    z, y, x = annotation_scale.shape
+    masks = zarr.open_array(
+        scratch_path,
+        mode="w",
+        shape=(n_structures, z, y, x),
+        chunks=(1, 128, 128, 128),
+        dtype=descriptors.ANNOTATION_MASKS_DTYPE,
+    )
+
+    flat_vol = annotation_scale.ravel()
+
+    for annotation_id, index in tqdm(
+        mapping.items(), desc="Processing annotations"
+    ):
+        # Get labels for region and it's children
+        stree = structures_tree.subtree(annotation_id)
+        ids = np.asarray(list(stree.nodes.keys()))
+        mapped_ids = np.array([mapping[id_] for id_ in ids])
+
+        lut = np.zeros(int(mapped_ids.max()) + 1, dtype=np.uint8)
+        lut[mapped_ids] = 1
+
+        mask = np.empty(annotation_scale.size, dtype=np.uint8)
+
+        create_masked_array_numba(flat_vol, lut, mask, typed_dict)
+
+        masks[index, ...] = mask.reshape(annotation_scale.shape)
+
+    return da.from_zarr(scratch_path)
+
+
+def _save_4d_annotation_data(
+    packaging_data: AtlasPackagingData,
+    transformations: List[List[dict]],
+) -> None:
+    """Write the 4D annotation masks array alongside annotations_compressed."""
+    annotation_info = packaging_data.annotation_info
+
+    if annotation_info.use_existing:
+        return
+
+    if annotation_info.update_existing:
+        _insert_into_4d_masks(packaging_data, transformations)
+        return
+
+    dest_dir = packaging_data.working_dir / annotation_info.metadata[
+        "location"
+    ].lstrip("/")
+
+    structures_tree = get_structures_tree(packaging_data.structures_list)
+    mapping = _generate_annotation_mapping(structures_tree)
+
+    transformations_4d = _transformations_from_scales(
+        [[1.0] + t[0]["scale"] for t in transformations]
+    )
+
+    masks_path = dest_dir / descriptors.V3_ANNOTATION_MASKS_NAME
+    scratch_dir = dest_dir / ".mask_scratch"
+    scratch_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        masks_per_scale = [
+            _compute_4d_masks_for_scale(
+                ann_scale,
+                structures_tree,
+                mapping,
+                scratch_dir / f"scale_{i}.zarr",
+            )
+            for i, ann_scale in enumerate(packaging_data.annotation_stack)
+        ]
+        save_annotation_masks(masks_per_scale, dest_dir, transformations_4d)
+
+        root = zarr.open_group(masks_path, mode="r+")
+
+        sorted_mapping_list = np.zeros(len(mapping), dtype=ANNOTATION_DTYPE)
+
+        for annotation_id, array_ind in mapping.items():
+            sorted_mapping_list[array_ind] = annotation_id
+
+        root[V3_ANNOTATION_MAP_NAME] = sorted_mapping_list
+    finally:
+        shutil.rmtree(scratch_dir, ignore_errors=True)
+
+
+def _insert_into_4d_masks(
+    packaging_data: AtlasPackagingData,
+    transformations: List[List[dict]],
+) -> None:
+    """Insert new resolution levels into an existing annotations.ome.zarr.
+
+    Reads the existing zarr from the previous version's directory, validates
+    that the annotation_mapping is unchanged, computes 4D masks for the new
+    scales, merges all scale levels, and writes to the new versioned directory.
+    """
+    annotation_info = packaging_data.annotation_info
+    existing_masks_path = (
+        packaging_data.working_dir
+        / Path(annotation_info.existing_stub).parent
+        / descriptors.V3_ANNOTATION_MASKS_NAME
+    )
+    target_dir = packaging_data.working_dir / Path(annotation_info.stub).parent
+    target_masks_path = target_dir / descriptors.V3_ANNOTATION_MASKS_NAME
+
+    if not existing_masks_path.exists():
+        raise ValueError(
+            f"No existing 4D masks zarr found at {existing_masks_path}. "
+            "This atlas may predate the 4D masks feature — "
+            "re-run without update_existing to build from scratch."
+        )
+
+    existing_root = zarr.open_group(existing_masks_path, mode="r")
+    raw_mapping = existing_root[V3_ANNOTATION_MAP_NAME][:]
+    stored_mapping = {
+        int(annotation_id): array_ind
+        for array_ind, annotation_id in enumerate(raw_mapping)
+    }
+
+    structures_tree = get_structures_tree(packaging_data.structures_list)
+    expected_mapping = _generate_annotation_mapping(structures_tree)
+
+    if stored_mapping != expected_mapping:
+        raise ValueError(
+            "The annotation_mapping in the existing 4D masks zarr does not "
+            "match the structures_list for this atlas version. "
+            "Re-run without update_existing to rebuild from scratch."
+        )
+
+    existing_multiscale = nz.from_ngff_zarr(existing_masks_path)
+    resolution_to_data: Dict[tuple, da.Array] = {
+        tuple(im.scale.values())[1:]: im.data
+        for im in existing_multiscale.images
+    }
+
+    new_resolutions = [tuple(t[0]["scale"]) for t in transformations]
+    target_dir.mkdir(parents=True, exist_ok=True)
+    scratch_dir = target_dir / ".mask_scratch"
+    scratch_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        for i, (res, annotation_scale) in enumerate(
+            zip(new_resolutions, packaging_data.annotation_stack)
+        ):
+            resolution_to_data[res] = _compute_4d_masks_for_scale(
+                annotation_scale,
+                structures_tree,
+                expected_mapping,
+                scratch_dir / f"scale_{i}.zarr",
+            )
+
+        existing_resolutions = [
+            tuple(im.scale.values())[1:] for im in existing_multiscale.images
+        ]
+        merged_resolutions = _merge_resolutions_list(
+            existing_resolutions, new_resolutions
+        )
+
+        merged_stack = [resolution_to_data[res] for res in merged_resolutions]
+        transformations_4d = _transformations_from_scales(
+            [[1.0] + list(res) for res in merged_resolutions]
+        )
+
+        save_annotation_masks(merged_stack, target_dir, transformations_4d)
+
+        new_root = zarr.open_group(target_masks_path, mode="r+")
+
+        sorted_mapping_list = np.zeros(
+            len(expected_mapping), dtype=ANNOTATION_DTYPE
+        )
+        for annotation_id, array_ind in expected_mapping.items():
+            sorted_mapping_list[array_ind] = annotation_id
+
+        new_root[V3_ANNOTATION_MAP_NAME] = sorted_mapping_list
+    finally:
+        shutil.rmtree(scratch_dir, ignore_errors=True)
+
+
+def _save_volumes(
+    packaging_data: VolumePackagingData,
+    transformations: List[List[dict]],
+) -> None:
+    for ref_tuple in packaging_data.volumes:
+        ref_info, additional_template = ref_tuple
+
+        if not ref_info.use_existing and not ref_info.update_existing:
+            dest_dir = packaging_data.working_dir / ref_info.metadata[
+                "location"
+            ].lstrip("/")
+            _save_if_not_exists(
+                additional_template,
+                dest_dir,
+                ref_info.metadata["name"],
+                transformations,
+                save_template,
+            )
+        elif ref_info.update_existing:
+            local_existing_path = (
+                packaging_data.working_dir / ref_info.existing_stub
+            )
+            multiscale = nz.from_ngff_zarr(local_existing_path)
+            local_target_path = packaging_data.working_dir / ref_info.stub
+            _insert_into_multiscale(
+                multiscale,
+                transformations=transformations,
+                new_data=additional_template,
+                working_dir=local_target_path,
+            )
+
+
+def _volume_manifest_path(
+    working_dir, atlas_name, atlas_version, resolution
+):
+    return (
+        working_dir
+        / MANIFESTS_ROOTDIR
+        / f"{atlas_name}_{resolution[0]:g}um"
+        / atlas_version.replace(".", "_")
+        / "manifest.json"
+    )
+
+
+def _validate_alternate_names(
+    alternate_names: Dict[str, List[str]] | None,
+    names: List[str],
+) -> Dict[str, List[str]]:
+    """Check alternate names match volumes; return them in volume order."""
+    alternate_names = alternate_names or {}
+    unknown = set(alternate_names) - set(names)
+    if unknown:
+        raise ValueError(
+            f"alternate_names given for unknown volumes: {sorted(unknown)}"
+        )
+    for name, alternates in alternate_names.items():
+        if isinstance(alternates, str) or not all(
+            isinstance(alt, str) for alt in alternates
+        ):
+            raise ValueError(
+                f"alternate_names for {name!r} must be a list of strings"
+            )
+    return {
+        name: list(alternate_names[name])
+        for name in names
+        if name in alternate_names
+    }
+
+
+def _save_volume_manifests(
+    working_dir,
+    atlas_name,
+    atlas_version,
+    resolutions,
+    volumes,
+    citation,
+    atlas_link,
+    species,
+    atlas_packager=None,
+    additional_metadata=None,
+    overwrite=False,
+    atlas_space: str | None = None,
+    alternate_names: Dict[str, List[str]] | None = None,
+):
+    """Register saved volumes as a named dataset."""
+    volume_metadata = [ref.metadata for ref in volumes]
+    names = [ref["name"] for ref in volume_metadata]
+    if len(set(names)) != len(names):
+        raise ValueError("Volume names must be unique")
+    alternate_names = _validate_alternate_names(alternate_names, names)
+    manifests = {}
+    for resolution in resolutions:
+        shapes = []
+        for ref in volumes:
+            multiscale = nz.from_ngff_zarr(working_dir / ref.stub)
+            matches = [
+                im
+                for im in multiscale.images
+                if np.allclose(
+                    [im.scale[dim] * 1000 for dim in im.dims], resolution
+                )
+            ]
+            if len(matches) != 1:
+                raise ValueError(
+                    f"Expected one volume level at {resolution} um"
+                )
+            shapes.append(tuple(matches[0].data.shape))
+        if not shapes or len(set(shapes)) != 1:
+            raise ValueError(
+                "Volumes must have matching shapes per resolution"
+            )
+        path = _volume_manifest_path(
+            working_dir, atlas_name, atlas_version, resolution
+        )
+        if path.exists() and not overwrite:
+            raise FileExistsError(f"Atlas manifest already exists: {path}")
+        manifests[path] = {
+            **(additional_metadata or {}),
+            "name": atlas_name,
+            "atlas_space": atlas_space,
+            "location": "/" + path.parent.relative_to(working_dir).as_posix(),
+            "version": atlas_version,
+            "citation": citation,
+            "atlas_link": atlas_link,
+            "species": species,
+            "atlas_packager": atlas_packager,
+            "orientation": descriptors.ATLAS_ORIENTATION,
+            "resolution": list(resolution),
+            "shape": list(shapes[0]),
+            "symmetric": None,
+            "volumes_only": True,
+            "volumes": volume_metadata,
+            "alternate_names": alternate_names,
+        }
+    for path, metadata in manifests.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(metadata, indent=4) + "\n")
+    return list(manifests)
+
+
+def _finalize_atlas_at_resolution(
+    resolution: Resolution,
+    shape: tuple,
+    packaging_data: AtlasPackagingData,
+    overwrite: bool,
+) -> Path:
+    atlas_version = packaging_data.atlas_version
+    atlas_version_underscore = atlas_version.replace(".", "_")
+    symmetric = packaging_data.symmetric
+    atlas_name = packaging_data.atlas_name
+
+    atlas_name_with_res = f"{atlas_name}_{resolution[0]}um"
+    atlas_location = (
+        f"/{descriptors.V3_ATLAS_ROOTDIR}/"
+        f"{atlas_name_with_res}/{atlas_version_underscore}"
+    )
+    atlas_dir = packaging_data.working_dir / atlas_location.strip("/")
+
+    if atlas_dir.exists():
+        if overwrite:
+            print(f"Atlas directory already exists, overwriting: {atlas_dir}")
+            shutil.rmtree(atlas_dir)
+        else:
+            raise FileExistsError(
+                f"Atlas output already exists at {atlas_dir}. "
+                "Try setting overwrite=True"
+            )
+
+    # exist_ok would be more permissive but error-prone here as there might
+    # be old files
+    atlas_dir.mkdir(parents=True)
+
+    additional_references = [
+        ref_info for ref_info, _ in packaging_data.additional_references
+    ]
+
+    metadata_dict = generate_metadata_dict(
+        name=atlas_name,
+        location=atlas_location,
+        citation=packaging_data.citation,
+        atlas_link=packaging_data.atlas_link,
+        species=packaging_data.species,
+        symmetric=symmetric,
+        resolution=resolution,
+        orientation=descriptors.ATLAS_ORIENTATION,
+        version=atlas_version,
+        shape=shape,
+        additional_references=additional_references,
+        atlas_packager=packaging_data.atlas_packager,
+        coordinate_space=packaging_data.coordinate_space_info,
+        terminology=packaging_data.terminology_info,
+        annotation_set=packaging_data.annotation_info,
+        template=packaging_data.template_info,
+    )
+
+    metadata_dict.update(packaging_data.additional_metadata)
+
+    with open(atlas_dir / "manifest.json", "w") as f:
+        json.dump(metadata_dict, f, indent=4)
+
+    atlas_name_for_validation = atlas_name_from_repr(atlas_name, resolution[0])
+
+    atlas_to_validate = BrainGlobeAtlas(
+        atlas_name=atlas_name_for_validation,
+        brainglobe_dir=packaging_data.working_dir.parent,
+        check_latest=False,
+    )
+
+    print(f"Running atlas validation on {atlas_location}")
+
+    validation_results = {}
+
+    for func in get_all_validation_functions():
+        try:
+            func(atlas_to_validate)
+            validation_results[func.__name__] = "Pass"
+        except AssertionError as e:
+            validation_results[func.__name__] = f"Fail: {str(e)}"
+
+    report_validation_results(validation_results)
+
+    return atlas_dir
+
+
+def wrapup_volume_from_data(
+    atlas_name: str,
+    atlas_minor_version: int | str,
+    citation: str,
+    atlas_link: str,
+    species: str,
+    resolution: Resolution | ResolutionList,
+    orientation: str,
+    root_id: int,
+    reference_stack: ValidComponentData,
+    annotation_stack: ValidComponentData,
+    structures_list: List[Dict],
+    meshes_dict: Dict[int | str, str | Path],
+    working_dir: str | Path,
+    atlas_packager=None,
+    hemispheres_stack=None,
+    template_info: Dict[str, str | bool] | None = None,
+    annotation_info: Dict[str, str | bool] | None = None,
+    terminology_info: Dict[str, str | bool] | None = None,
+    coordinate_space_info: Dict[str, str | bool] | None = None,
+    scale_meshes=False,
+    resolution_mapping=None,
+    volumes: (
+        List[
+            Tuple[
+                Dict | str,
+                ValidComponentData,
+            ]
+        ]
+        | Dict[str, ValidComponentData]
+        | None
+    ) = None,
+    additional_metadata: dict | None = None,
+    overwrite=False,
+    cleanup_files=None,
+    compress=None,
+    atlas_space: str | None = None,
+    alternate_names: Dict[str, List[str]] | None = None,
+) -> List[Path]:
+    """
+    Export volumes as OME-Zarr components.
+
+    Primary template, annotation, terminology, and coordinate-space components
+    are not written or fetched. Their input arguments are retained for call
+    compatibility and may be None. A manifest registers the volumes for
+    loading with BrainGlobeVolume. Full-atlas validation is skipped.
+    Atlas-only options such as scale_meshes and resolution_mapping are unused.
+
+    Parameters
+    ----------
+    atlas_name : str
+        Atlas name in the form author_species.
+    atlas_minor_version : int | str
+        Minor version number for this particular atlas.
+    citation : str
+        Citation for the atlas, if unpublished specify "unpublished".
+    atlas_link : str
+        Valid URL for the atlas.
+    species : str
+        Species name formatted as "CommonName (Genus species)".
+    resolution : Resolution | ResolutionList
+        Three elements tuple, resolution on three axes or a list of such tuples
+        for each scale, ordered from highest to lowest resolution.
+    orientation : str
+        Orientation of the original atlas
+        (tuple describing origin for BGSpace).
+    root_id : int
+        Id of the root element of the atlas.
+    reference_stack : ValidComponentData
+        Reference stack for the atlas.
+        If str or Path, will be read with load_any.
+        If list, should be list of stacks for each scale, ordered from highest
+        to lowest resolution.
+    annotation_stack : ValidComponentData
+        Annotation stack for the atlas.
+        If str or Path, will be read with load_any.
+        If list, should be list of stacks for each scale, ordered from highest
+        to lowest resolution.
+    structures_list : List[Dict]
+        List of valid dictionaries for structures.
+    meshes_dict : Dict[int | str, str | Path]
+        dict of meshio-compatible mesh file paths in the form
+        {struct_id: meshpath}
+    working_dir : str | Path
+        Parent of the brainglobe-data-api output directory.
+    atlas_packager : str or None
+        Credit for those responsible for converting the atlas
+        into the BrainGlobe format.
+    hemispheres_stack : ValidComponentData | None, optional
+        Hemisphere stack for the atlas.
+        If str or Path, will be read with load_any.
+        If list, should be list of stacks for each scale, ordered from highest
+        to lowest resolution.
+        If none is provided, atlas is assumed to be symmetric.
+    scale_meshes: bool, optional
+        Retained for call compatibility; unused for volume exports.
+    resolution_mapping: List[int], optional
+        Retained for call compatibility; unused for volume exports.
+    volumes: List[Tuple[Dict | str, ValidComponentData]] | Dict[str, ValidComponentData] | None
+        List of tuples containing metadata and arrays for volumes.
+        Volume names must already be lowercase and contain only ASCII
+        characters.
+        Storage directories are named <atlas_name>-<volume_name>; manifest
+        names and lookup keys retain the supplied volume name.
+        Pass TIFF or NIfTI paths to load and write one volume at a time.
+        For multiple resolutions, pass a list of paths for each volume.
+    additional_metadata: dict, optional
+        Extra metadata included in each dataset manifest.
+    overwrite : bool, optional
+        (Default value = False).
+        If True, replace existing volume component directories.
+        If False and a volume output exists, raise FileExistsError.
+        Volumes marked use_existing are reused without deletion.
+    cleanup_files : deprecated, optional
+        (Default value = None).
+        Deprecated and has no effect.
+    compress : deprecated, optional
+        (Default value = None).
+        Deprecated and has no effect.
+    atlas_space : str, optional
+        BrainGlobe atlas name the dataset is registered to, including resolution
+        (e.g. "allen_mouse_25um"). Stored in the dataset manifest.
+    alternate_names : Dict[str, List[str]], optional
+        Alternate names (e.g. gene synonyms) for each volume, keyed by volume
+        name. Volumes may be omitted. Stored in the dataset manifest as
+        "alternate_names", which is an empty mapping if none are given.
+
+    Returns
+    -------
+    List[Path]
+        OME-Zarr paths for the volumes, in input order.
+        An empty volume collection returns an empty list without writing.
+    """  # noqa: E501
+    if cleanup_files is not None:
+        print(
+            "Warning: `cleanup_files` argument is deprecated and has no effect"
+        )
+
+    if compress is not None:
+        print("Warning: `compress` argument is deprecated and has no effect")
+
+    working_dir = Path(working_dir) / DATA_ROOTDIR
+    atlas_version = f"{ATLAS_VERSION}.{atlas_minor_version}"
+    if not volumes:
+        return []
+
+    resolutions = [resolution] if isinstance(resolution, tuple) else resolution
+    for res in resolutions:
+        manifest_path = _volume_manifest_path(
+            working_dir, atlas_name, atlas_version, res
+        )
+        if manifest_path.exists() and not overwrite:
+            raise FileExistsError(
+                f"Atlas manifest already exists: {manifest_path}"
+            )
+
+    volume_list = []
+    if volumes is not None:
+        if isinstance(volumes, dict):
+            volumes = list(volumes.items())
+
+        for ref_tuple in volumes:
+            ref_metadata, _ = ref_tuple
+            if isinstance(ref_metadata, str):
+                ref_dict = {
+                    "name": ref_metadata,
+                    "version": atlas_version,
+                }
+            else:
+                ref_dict = ref_metadata
+
+            if not ref_dict["name"].isascii():
+                raise ValueError(
+                    f"Volume name must contain only ASCII characters: "
+                    f"{ref_dict['name']!r}"
+                )
+            if ref_dict["name"] != ref_dict["name"].lower():
+                raise ValueError(
+                    f"Volume name must be lowercase: {ref_dict['name']!r}"
+                )
+            component_info = TemplateInfo(
+                **{**ref_dict, "name": f"{atlas_name}-{ref_dict['name']}"}
+            )
+            component_info.metadata["name"] = ref_dict["name"]
+            volume_list.append((component_info, ref_tuple[1]))
+
+    _validate_alternate_names(
+        alternate_names, [info.metadata["name"] for info, _ in volume_list]
+    )
+
+    for component_info, _ in volume_list:
+        if component_info.use_existing:
+            continue
+        component_dir = (
+            working_dir
+            / component_info.root_dir
+            / component_info.name
+            / component_info.version
+        )
+        if component_dir.exists() and overwrite:
+            print(
+                f"Component directory already exists, "
+                f"deleting: {component_dir}"
+            )
+            shutil.rmtree(component_dir)
+        elif component_dir.exists():
+            raise FileExistsError(
+                f"Component directory already exists at {component_dir}. "
+                "Try setting overwrite=True"
+            )
+
+    transformations = _transformations_from_scales(
+        [[res / 1000 for res in t] for t in resolutions]
+    )
+
+    for volume in volume_list:
+        packaging_data = VolumePackagingData(
+            resolution=resolution,
+            orientation=orientation,
+            working_dir=working_dir,
+            volumes=[volume],
+        )
+        _save_volumes(packaging_data, transformations)
+        del packaging_data
+        gc.collect()
+
+    _save_volume_manifests(
+        working_dir=working_dir,
+        atlas_name=atlas_name,
+        atlas_version=atlas_version,
+        resolutions=resolutions,
+        volumes=[info for info, _ in volume_list],
+        citation=citation,
+        atlas_link=atlas_link,
+        species=species,
+        atlas_packager=atlas_packager,
+        additional_metadata=additional_metadata,
+        overwrite=overwrite,
+        atlas_space=atlas_space,
+        alternate_names=alternate_names,
+    )
+
+    return [
+        working_dir / ref_info.stub
+        for ref_info, _ in volume_list
+    ]

@@ -1,7 +1,15 @@
-from importlib.metadata import PackageNotFoundError, version
+from importlib.metadata import PackageNotFoundError, metadata
 
 try:
-    __version__ = version("brainglobe-data-api-volume")
+    __version__ = metadata("brainglobe-atlasapi")["Version"]
+    __author__ = metadata("brainglobe-atlasapi")["Author-email"]
+    del metadata
 except PackageNotFoundError:
     # package is not installed
     pass
+
+
+from brainglobe_data_api_volume.bg_volume import BrainGlobeVolume
+from brainglobe_data_api_volume.list_datasets import show_datasets
+
+__all__ = ["BrainGlobeVolume", "show_datasets"]

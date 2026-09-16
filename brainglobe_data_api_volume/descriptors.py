@@ -1,0 +1,237 @@
+"""Module containing property descriptors for brainglobe-atlasapi."""
+
+from pathlib import Path
+from typing import List, Tuple, TypeAlias
+
+import numpy as np
+import numpy.typing as npt
+
+DATA_ROOTDIR = "brainglobe-data-api"
+MANIFESTS_ROOTDIR = "manifests"
+VOLUMES_ROOTDIR = "volumes"
+
+# Base URL for the BrainGlobe atlas S3 bucket. Atlas components shared
+# between datasets (templates, annotation sets, terminologies and coordinate
+# spaces) are served from here:
+remote_url_s3 = "s3://brainglobe/atlas/{}"
+remote_url_s3_http = "https://brainglobe.s3.us-west-2.amazonaws.com/atlas/{}"
+
+# Base URL for the volume data S3 bucket. Dataset manifests and the volumes
+# they list are served from here, under the same layout used locally by
+# DATA_ROOTDIR:
+remote_url_data_s3 = "s3://brainglobe/data/volume/{}"
+remote_url_data_s3_http = (
+    "https://brainglobe.s3.us-west-2.amazonaws.com/data/volume/{}"
+)
+
+# Major version of atlases used by current brainglobe-atlasapi release:
+ATLAS_MAJOR_V = 0
+
+# Supported resolutions:
+RESOLUTION = ["nm", "um", "mm"]
+
+# Entries and types from this template will be used to check atlas info
+# consistency. Please keep updated both this and the function when changing
+# the structure.
+# If the atlas is unpublished, specify "unpublished" in the citation.
+METADATA_TEMPLATE = {
+    "name": "source_species_additional-info",
+    "citation": "Someone et al 2020, https://doi.org/somedoi",
+    "atlas_link": "http://www.example.com",
+    "species": "Gen species",
+    "symmetric": False,
+    "resolution": [1.0, 1.0, 1.0],
+    "orientation": "asr",
+    "shape": [100, 50, 100],
+    "version": "0.0",
+    "additional_references": [],
+}
+
+
+# Template for a structure dictionary:
+STRUCTURE_TEMPLATE = {
+    "acronym": "root",
+    "id": 997,
+    "name": "root",
+    "structure_id_path": [997],
+    "rgb_triplet": [255, 255, 255],
+}
+
+
+# File and directory names for the atlas package:
+METADATA_FILENAME = "metadata.json"
+STRUCTURES_FILENAME = "structures.json"
+REFERENCE_FILENAME = "reference.tiff"
+ANNOTATION_FILENAME = "annotation.tiff"
+HEMISPHERES_FILENAME = "hemispheres.tiff"
+MESHES_DIRNAME = "meshes"
+
+# V3 file names
+V3_ATLAS_ROOTDIR = "atlases"
+V3_ANNOTATION_ROOTDIR = "annotation-sets"
+V3_COORDINATE_SPACE_ROOTDIR = "coordinate-spaces"
+V3_TEMPLATE_ROOTDIR = "templates"
+V3_TERMINOLOGY_ROOTDIR = "terminologies"
+V3_TERMINOLOGY_NAME = "terminology.csv"
+V3_MESHES_DIRECTORY = "annotations.precomputed/mesh"
+V3_TEMPLATE_NAME = "template.ome.zarr"
+V3_ANNOTATION_NAME = "annotations_compressed.ome.zarr"
+V3_ANNOTATION_MASKS_NAME = "annotations.ome.zarr"
+V3_ANNOTATION_MAP_NAME = "annotation_values"
+V3_HEMISPHERES_NAME = "hemispheres.ome.zarr"
+
+# Types for the atlas stacks:
+REFERENCE_DTYPE = np.uint16
+ANNOTATION_DTYPE = np.uint32
+HEMISPHERES_DTYPE = np.uint8
+ANNOTATION_MASKS_DTYPE = np.uint8
+
+# Standard orientation origin: Anterior, Superior, Right
+# (using brainglobe-space definition)
+ATLAS_ORIENTATION = "asr"
+
+# Type aliases
+ValidComponentData: TypeAlias = (
+    str | Path | npt.NDArray | List[str | Path | npt.NDArray]
+)
+Resolution: TypeAlias = Tuple[int | float, int | float, int | float]
+ResolutionList: TypeAlias = List[Resolution]
+
+
+def format_component_stub(
+    component_name: str,
+    component_version: str,
+    component_root_dir: str,
+    component_file_name: str,
+) -> str:
+    """
+    Format the component stub for a given component name, version,
+    root directory and file name.
+
+    Parameters
+    ----------
+    component_name : str
+        The name of the component (e.g., allen-mouse-adult-stpt-template).
+    component_version : str
+        The version of the component.
+    component_root_dir : str
+        The root directory of the component.
+    component_file_name : str
+        The name of the component file.
+
+    Returns
+    -------
+    str
+        The formatted component stub.
+    """
+    component_version = component_version.replace(".", "_")
+    stub = (
+        f"{component_root_dir}/{component_name}/"
+        f"{component_version}/{component_file_name}"
+    )
+    return stub
+
+
+def format_template_stub(template_name: str, version: str) -> str:
+    """
+    Format the template stub for a given template name and version.
+
+    Parameters
+    ----------
+    template_name : str
+        The name of the template (e.g., allen-adult-mouse-stpt-template).
+    version : str
+        The version of the template.
+
+    Returns
+    -------
+    str
+        The formatted template stub.
+    """
+    return format_component_stub(
+        template_name, version, V3_TEMPLATE_ROOTDIR, V3_TEMPLATE_NAME
+    )
+
+
+def format_annotation_stub(annotation_name: str, version: str) -> str:
+    """
+    Format the annotation stub for a given annotation name and version.
+
+    Parameters
+    ----------
+    annotation_name : str
+        The name of the annotation (e.g., allen-adult-mouse-annotation).
+    version : str
+        The version of the annotation.
+
+    Returns
+    -------
+    str
+        The formatted annotation stub.
+    """
+    return format_component_stub(
+        annotation_name, version, V3_ANNOTATION_ROOTDIR, V3_ANNOTATION_NAME
+    )
+
+
+def format_hemispheres_stub(annotation_name: str, version: str) -> str:
+    """
+    Format the hemispheres stub for a given hemispheres name and version.
+
+    Parameters
+    ----------
+    annotation_name : str
+        The name of the annotation (e.g., allen-adult-mouse-annotation).
+    version : str
+        The version of the annotation.
+
+    Returns
+    -------
+    str
+        The formatted hemispheres stub.
+    """
+    return format_component_stub(
+        annotation_name, version, V3_ANNOTATION_ROOTDIR, V3_HEMISPHERES_NAME
+    )
+
+
+def format_terminology_stub(terminology_name: str, version: str) -> str:
+    """
+    Format the terminology stub for a given terminology name and version.
+
+    Parameters
+    ----------
+    terminology_name : str
+        The name of the terminology (e.g., allen-adult-mouse-terminology).
+    version : str
+        The version of the terminology.
+
+    Returns
+    -------
+    str
+        The formatted terminology stub.
+    """
+    return format_component_stub(
+        terminology_name, version, V3_TERMINOLOGY_ROOTDIR, V3_TERMINOLOGY_NAME
+    )
+
+
+def format_meshes_stub(annotation_name: str, version: str) -> str:
+    """
+    Format the meshes stub for a given annotation name and version.
+
+    Parameters
+    ----------
+    annotation_name : str
+        The name of the annotation (e.g., allen-adult-mouse-annotation).
+    version : str
+        The version of the annotation.
+
+    Returns
+    -------
+    str
+        The formatted meshes stub.
+    """
+    return format_component_stub(
+        annotation_name, version, V3_ANNOTATION_ROOTDIR, V3_MESHES_DIRECTORY
+    )
