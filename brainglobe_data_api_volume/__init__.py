@@ -10,4 +10,6 @@ except PackageNotFoundError:
 
 
 from brainglobe_data_api_volume.bg_volume import BrainGlobeVolume
-from brainglobe_atlasapi.list_atlases import show_atlases
+from brainglobe_data_api_volume.list_datasets import show_datasets
+
+__all__ = ["BrainGlobeVolume", "show_datasets"]
