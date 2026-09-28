@@ -3,7 +3,7 @@ name = "brainglobe-data-api-volume"
 authors = [{name = "Harry Carey", email= "harry.carey95@gmail.com"}]
 description = "An API for accessing atlas registered 3D volumetric data."
 readme = "README.md"
-requires-python = ">=3.11.0"
+requires-python = ">=3.12.0"
 dynamic = ["version"]
 
 dependencies = []
@@ -16,9 +16,9 @@ classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
 ]
 
